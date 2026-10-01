@@ -1,0 +1,26 @@
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA512
+
+Origin: Fly OS
+Label: Fly OS
+Suite: dev
+Codename: dev
+Architectures: amd64
+Components: main
+Date: Thu, 01 Oct 2026 13:42:17 GMT
+SHA256:
+ e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855                0 main/binary-amd64/Packages
+-----BEGIN PGP SIGNATURE-----
+
+iQGzBAEBCgAdFiEEGKLFZxI0PMANeIKmyQ6whIYndaMFAmq+YzkACgkQyQ6whIYn
+daNaKgv+L4DCWGKz85sBEdT4USMXNa4tvsBG+0zUnikCkdeuwlBlVSvAE39KuqEC
+DYo/sySandWR+CvyxeexCa1FrxMBhlCBtSnmxC7XD5/DcjGjsQ+YSO6Qk/P4GaqB
+7a1h/qj8+UfF7rtBhyYD2b7YKEjrwpW+vwbZESRzxAw5/6r1EIEia4/lRJkxedbQ
+TPZSHcJB/mgPYwgODaNnOY/JZ1CfTQ5n0H4Clf1WVerHP9m8UXmQljlhZ6Dypny7
+ROTfiHcX8ohwPfJp7mu19IdQ4ByCVnd/8KbvtEYpOuNvB0Zrd4rfS/EyaYuN5kh1
+gjZqKfCw2VDV1DdA8g6eR3FBCPGxX+iudvFBBnJRS5xsnODnogg43QlHRMl8tLKb
+aQ7duP7N+ep8dNnf/ppCLwIAW6qiPDP5OQulfGJP+LO7nL0gVqqRY3UxQeSLggsO
+mp6387bq0ubvb234CdUQh6w2JJ/WnYXzO6Q3uOowJPuwKpU19uNARGk9GsVvFJP2
+0PoxgU3Y
+=Go9l
+-----END PGP SIGNATURE-----
