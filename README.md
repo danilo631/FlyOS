@@ -1,79 +1,32 @@
-# Fly OS 0.6 Alpha 5
+# Fly OS 0.11 Developer Alpha
 
-Fly OS is an open-source desktop operating-system project focused on a coherent, fast and recoverable desktop experience. It uses Ubuntu 26.04 LTS archives as a **compatibility, security and hardware-enablement substrate**, while the session, shell, settings, update/recovery flow, Windows integration and visual identity are Fly-owned.
+Fly OS is an open-source Wayland desktop operating-system project. Ubuntu 26.04 LTS remains the compatibility/security/hardware substrate, while the visible session, shell, settings, search, update/recovery, Windows integration and Fly package feed are owned by Fly OS.
 
-The native desktop is **KWin Wayland + Fly Session + Fly Shell**. `plasmashell` is not required to start Fly OS; a Plasma session can still be installed as a fallback.
+## 0.11 highlights
 
-> **Alpha status:** 0.6.0-alpha5 is for development/testing. Do not treat it as a production OS until installation, upgrade, Secure Boot, suspend/resume, recovery and the hardware matrix in `docs/RELEASE_CHECKLIST.md` pass on real machines.
+- **Fly Platform** uses direct D-Bus integration for KWin, MPRIS, NetworkManager and BlueZ.
+- Fly media no longer requires playerctl; Fly network/Bluetooth no longer parse nmcli/bluetoothctl.
+- screenshot uses XDG Desktop Portal; brightness uses logind + kernel backlight; clipboard history uses Qt/Wayland directly.
+- **Fly Files**, Fly Audio, Fly Display, Fly Firewall and Fly Recovery UI cover common tasks without requiring Dolphin, pavucontrol, Spectacle, PackageKit or Plasma System Settings in the default image.
+- Fly Apps uses a narrow PolicyKit APT helper rather than PackageKit.
+- **flyos-repo** installs the Fly OS archive key/source and manages dev/beta/stable channels.
+- Signed APT bootstrap is published from the **apt** branch.
 
-## 0.6 highlights
+APT feed:
 
-- modular Debian packages: core, shell, center, search, update, recovery, Wine, branding and a base metapackage;
-- native Fly Shell on KWin/Wayland with top bar, dock, launcher, Quick Settings, audio-output switching, media controls, OSD and Fly-native notifications;
-- Fly Search with a local SQLite FTS filename/path index and no content upload;
-- Fly Apps with APT/PackageKit and optional Flatpak support;
-- staged offline system updates with transaction locking, cached-package hashes, systemd `system-update.target` and optional Btrfs/Snapper pre-update snapshots;
-- Fly Rescue UI when the shell reaches its restart limit;
-- Safe UI login mode with reduced motion/transparency;
-- zram, workload-aware systemd user slices, power profiles and scoped gaming optimizations;
-- AppArmor/UFW/PolicyKit/KScreenLocker reuse for security without reimplementing mature upstream infrastructure;
-- Wine integration so Windows shortcuts appear in the same launcher/search model;
-- no Fly-owned telemetry by default.
+`https://raw.githubusercontent.com/danilo631/FlyOS/apt`
 
-## Latest alpha5 fixes
+Development key fingerprint:
 
-- robust PipeWire/Pulse audio output switching: stale sinks are rejected and the current default is tracked in Quick Settings;
-- Quick Settings now surfaces prepared offline updates, failed-update state and recovery/snapshot availability;
-- multimedia and brightness shortcuts work without requiring PowerDevil;
-- rapid shell commands use an append queue instead of a single overwritten command file;
-- the native session no longer registers Fly services into unrelated desktop sessions;
-- package QA verifies unique payload ownership across all Fly Debian packages.
+`18A2 C567 1234 3CC0 0D78 82A6 C90E B084 8627 75A3`
 
-## Build and QA
+## Build
 
 ```bash
-make package
-make lint
-make release-bundle
-make sbom
-```
-
-Fly Base ISO:
-
-```bash
-sudo apt update
 make deps
 make package
+make lint
 make iso-flybase
 ```
 
-The Fly Base builder starts from an Ubuntu 26.04 minimal rootfs and does not pull Plasma Workspace by default. It remains a developer pipeline until signed boot media and real-hardware install/upgrade/recovery testing are complete.
-
-## Architecture
-
-```text
-Linux kernel / hardware enablement
-        ↓
-systemd + Mesa + NetworkManager + PipeWire
-        ↓
-KWin / Wayland
-        ↓
-Fly Session
-        ↓
-Fly Shell
- ├─ Fly Search
- ├─ Fly Connect
- ├─ Fly Center
- ├─ Fly Apps
- ├─ Fly Update
- ├─ Fly Recovery
- └─ Fly Wine
-```
-
-Fly OS owns the product layer while reusing mature upstream infrastructure where a private fork would reduce stability and security.
-
-## Status
-
-Fly OS is **not yet 1.0 stable**. Stable status requires signed release boot media, installer/upgrade/recovery validation and a real hardware matrix.
-
-Fly OS project-specific code is GPL-3.0-or-later unless stated otherwise.
+Fly OS 0.11 is still a developer alpha. Real-hardware installation, Secure Boot signing, suspend/resume, recovery and broader GPU/Bluetooth testing remain release blockers.
