@@ -1,0 +1,35 @@
+name: Bootstrap Fly OS source
+on:
+  push:
+    paths:
+      - ".bootstrap/READY"
+permissions:
+  contents: write
+
+jobs:
+  import-source:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Reconstruct validated source bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .bootstrap/source.b64.part* | base64 -d > /tmp/flyos-source.tar.gz
+          rm -rf .bootstrap
+          rm -f .github/workflows/bootstrap-source.yml
+          tar -xzf /tmp/flyos-source.tar.gz
+          rm -rf .build .packages dist
+          find . -type d -name __pycache__ -prune -exec rm -rf {} +
+          find . -type f -name '*.pyc' -delete
+      - name: Commit imported tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "Fly OS Bootstrap"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A
+          git commit -m "Import Fly OS 0.6.0-alpha4 source"
+          git push origin HEAD:main
