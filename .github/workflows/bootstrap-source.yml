@@ -18,12 +18,21 @@ jobs:
         run: |
           set -euo pipefail
           cat .bootstrap/source.b64.part* | base64 -d > /tmp/flyos-source.tar.gz
+          echo "83319a6c42e1f6e61acf94b66eb44ee12fddff0489adae59f5d2dcd587d43d90  /tmp/flyos-source.tar.gz" | sha256sum -c -
           rm -rf .bootstrap
           rm -f .github/workflows/bootstrap-source.yml
           tar -xzf /tmp/flyos-source.tar.gz
           rm -rf .build .packages dist
           find . -type d -name __pycache__ -prune -exec rm -rf {} +
           find . -type f -name '*.pyc' -delete
+      - name: Validate imported source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(cat VERSION)" = "0.6.0-alpha5"
+          test -f packages/flyos-base/rootfs/usr/lib/flyos/fly-shell.py
+          test -f packages/flyos-base/rootfs/usr/lib/flyos/fly-notifications.py
+          grep -q "0.6.0-alpha5" CHANGELOG.md
       - name: Commit imported tree
         shell: bash
         run: |
@@ -31,5 +40,5 @@ jobs:
           git config user.name "Fly OS Bootstrap"
           git config user.email "actions@users.noreply.github.com"
           git add -A
-          git commit -m "Import Fly OS 0.6.0-alpha4 source"
+          git commit -m "Import Fly OS 0.6.0-alpha5 source"
           git push origin HEAD:main
