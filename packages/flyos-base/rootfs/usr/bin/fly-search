@@ -1,0 +1,39 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+"""Query the local Fly Search filename index."""
+from __future__ import annotations
+import argparse, json, sqlite3
+from pathlib import Path
+
+DB = Path.home() / '.cache/flyos/search.db'
+
+def terms(query: str) -> str:
+    words = [w.replace('"', '').strip() for w in query.split() if w.replace('"','').strip()]
+    return ' AND '.join(f'"{w}"*' for w in words)
+
+def main() -> int:
+    ap=argparse.ArgumentParser(description='Search local filenames indexed by Fly Search')
+    ap.add_argument('query', nargs='+')
+    ap.add_argument('--limit', type=int, default=20)
+    ap.add_argument('--json', action='store_true')
+    ns=ap.parse_args()
+    if not DB.exists():
+        print('Fly Search index is not ready. Run: fly-indexer', flush=True)
+        return 3
+    match=terms(' '.join(ns.query))
+    if not match: return 0
+    try:
+        con=sqlite3.connect(f'file:{DB}?mode=ro', uri=True, timeout=.5)
+        con.row_factory=sqlite3.Row
+        rows=con.execute('SELECT path,name,parent FROM files_fts WHERE files_fts MATCH ? LIMIT ?', (match,max(1,min(ns.limit,200)))).fetchall()
+        con.close()
+    except sqlite3.Error as exc:
+        print(f'Fly Search database error: {exc}')
+        return 4
+    data=[dict(r) for r in rows]
+    if ns.json:
+        print(json.dumps(data, ensure_ascii=False, indent=2))
+    else:
+        for row in data: print(row['path'])
+    return 0
+if __name__=='__main__': raise SystemExit(main())

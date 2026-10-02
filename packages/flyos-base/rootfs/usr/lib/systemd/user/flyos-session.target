@@ -1,0 +1,7 @@
+[Unit]
+Description=Fly OS graphical session
+Wants=plasma-polkit-agent.service fly-airplane.service fly-battery-watch.service fly-privacy-monitor.service fly-performance-monitor.service fly-shell.service fly-first-login.service fly-welcome.service fly-notifications.service fly-indexer.timer fly-theme.timer fly-power-auto.timer fly-shortcuts.service fly-idle.service
+After=graphical-session-pre.target
+
+# This target is intentionally not installable into default.target. fly-session
+# starts it explicitly so Fly services never leak into another desktop session.

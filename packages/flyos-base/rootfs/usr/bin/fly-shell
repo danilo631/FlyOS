@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -euo pipefail
+if [[ -e "${XDG_CONFIG_HOME:-$HOME/.config}/flyos/shell-disabled" ]]; then
+  exit 0
+fi
+exec python3 /usr/lib/flyos/fly-shell.py "$@"

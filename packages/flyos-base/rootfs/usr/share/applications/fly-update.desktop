@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Fly Update
+Comment=Install system and application updates
+Exec=fly-update gui
+Icon=system-software-update
+Categories=System;Settings;
+StartupNotify=true

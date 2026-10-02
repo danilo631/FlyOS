@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=Fly Volume Mute
+Exec=fly-volume mute
+NoDisplay=true
+X-KDE-Shortcuts=Volume Mute

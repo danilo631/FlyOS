@@ -1,0 +1,32 @@
+name: Fly OS package release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and validate
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y dpkg-dev
+          make lint
+          make release-bundle
+      - name: Publish tag assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            dist/release-*/flyos-*_*_all.deb \
+            dist/release-*/FlyOS-source-*.tar.gz \
+            dist/release-*/FlyOS-source-*.zip \
+            dist/release-*/FlyOS-*.spdx.json \
+            dist/release-*/SHA256SUMS \
+            --verify-tag --generate-notes

@@ -1,0 +1,6 @@
+QWidget { color: #eef4ff; }
+QWidget#mainApp { background: #111722; }
+QAbstractButton { border-radius: 8px; padding: 6px 12px; }
+QPushButton { background: #315baa; color: white; border: 0; }
+QPushButton:hover { background: #3e6cc4; }
+QLineEdit, QComboBox, QSpinBox { background: #202a3a; border: 1px solid #3b4a61; border-radius: 8px; padding: 5px; }

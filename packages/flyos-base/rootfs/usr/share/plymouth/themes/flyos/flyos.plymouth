@@ -1,0 +1,8 @@
+[Plymouth Theme]
+Name=Fly OS
+Description=Minimal Fly OS boot theme
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/flyos
+ScriptFile=/usr/share/plymouth/themes/flyos/flyos.script

@@ -1,0 +1,15 @@
+[Unit]
+Description=Fly OS low-battery safety notifications
+PartOf=flyos-session.target
+After=fly-notifications.service
+
+[Service]
+Type=simple
+ExecStart=/usr/lib/flyos/fly-battery-watch
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=yes
+PrivateTmp=yes
+
+[Install]
+WantedBy=flyos-session.target

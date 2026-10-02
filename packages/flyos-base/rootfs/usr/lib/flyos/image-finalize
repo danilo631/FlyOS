@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "Fly OS image finalization"
+
+# Install Fly's Calamares branding independently from any Ubuntu flavour.
+if [[ -d /usr/share/flyos/calamares ]]; then
+  mkdir -p /etc/calamares/branding/flyos
+  cp -a /usr/share/flyos/calamares/. /etc/calamares/branding/flyos/
+  if [[ -f /etc/calamares/settings.conf ]]; then
+    if grep -q '^branding:' /etc/calamares/settings.conf; then
+      sed -i 's/^branding:.*/branding: flyos/' /etc/calamares/settings.conf || true
+    fi
+  fi
+  # Compatibility with the Kubuntu remaster path while it remains supported.
+  if [[ -d /etc/calamares/branding/kubuntu ]]; then
+    cp -a /usr/share/flyos/calamares/. /etc/calamares/branding/kubuntu/
+  fi
+fi
+
+for desktop in /usr/share/applications/kubuntu-calamares.desktop /usr/share/applications/*installer-prompt*.desktop; do
+  [[ -f "$desktop" ]] || continue
+  sed -i \
+    -e 's/^Name=.*/Name=Install Fly OS/' \
+    -e 's/^GenericName=.*/GenericName=Fly OS Installer/' \
+    -e 's/^Comment=.*/Comment=Install Fly OS on this computer/' \
+    "$desktop" || true
+done
+if command -v calamares >/dev/null 2>&1 && [[ ! -e /usr/share/applications/flyos-calamares.desktop ]]; then
+  cat > /usr/share/applications/flyos-calamares.desktop <<'EOF'
+[Desktop Entry]
+Type=Application
+Name=Install Fly OS
+GenericName=Fly OS Installer
+Comment=Install Fly OS on this computer
+Exec=pkexec calamares
+Icon=flyos
+Terminal=false
+Categories=System;
+EOF
+fi
+
+# Fly OS identity overlays /etc/os-release while preserving Ubuntu's canonical
+# compatibility data under /usr/lib/os-release.
+/usr/lib/flyos/fly-identity
+
+mkdir -p /etc/sddm.conf.d
+
+# Native Fly session is first-class. Plasma may still be installed as fallback.
+if [[ -f /usr/share/wayland-sessions/flyos.desktop ]]; then
+  mkdir -p /usr/share/wayland-sessions
+fi
+
+if command -v systemctl >/dev/null 2>&1; then
+  systemctl set-default graphical.target >/dev/null 2>&1 || true
+  systemctl enable sddm.service >/dev/null 2>&1 || true
+  systemctl enable NetworkManager.service >/dev/null 2>&1 || true
+  systemctl enable bluetooth.service >/dev/null 2>&1 || true
+  systemctl enable apparmor.service >/dev/null 2>&1 || true
+  systemctl enable flyos-identity.service >/dev/null 2>&1 || true
+  systemctl enable power-profiles-daemon.service >/dev/null 2>&1 || true
+  systemctl enable flyos-tune.service >/dev/null 2>&1 || true
+fi
+
+# Wine 32-bit support on amd64 remains best-effort; failure must not make an ISO
+# unbuildable when a mirror is temporarily incomplete.
+if [[ "$(dpkg --print-architecture)" == "amd64" ]]; then
+  dpkg --add-architecture i386 || true
+  apt-get update || true
+  DEBIAN_FRONTEND=noninteractive apt-get install -y wine32:i386 || true
+fi
+
+if command -v update-alternatives >/dev/null 2>&1; then
+  update-alternatives --set default.plymouth /usr/share/plymouth/themes/flyos/flyos.plymouth || true
+fi
+
+update-initramfs -u || true
+update-grub || true
+apt-get clean
+rm -rf /var/lib/apt/lists/*

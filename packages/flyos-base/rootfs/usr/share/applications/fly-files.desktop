@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Fly Files
+Comment=Arquivos e pastas
+Exec=fly-files
+Icon=system-file-manager
+Categories=System;FileTools;FileManager;
+Terminal=false
+StartupNotify=true

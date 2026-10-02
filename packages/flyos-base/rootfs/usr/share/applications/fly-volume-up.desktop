@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=Fly Volume Up
+Exec=fly-volume up
+NoDisplay=true
+X-KDE-Shortcuts=Volume Up

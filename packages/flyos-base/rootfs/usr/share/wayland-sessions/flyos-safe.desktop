@@ -1,0 +1,6 @@
+[Desktop Entry]
+Name=Fly OS (Safe UI)
+Comment=Fly OS Wayland session with reduced visual effects
+Exec=fly-session --safe
+Type=Application
+DesktopNames=FlyOS

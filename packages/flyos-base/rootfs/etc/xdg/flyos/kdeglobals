@@ -1,0 +1,17 @@
+[General]
+ColorScheme=FlyGlass
+Name=FlyGlass
+
+[KDE]
+AnimationDurationFactor=0.8
+ShowDeleteCommand=true
+SingleClick=false
+
+[Icons]
+Theme=breeze
+
+[WM]
+activeBackground=42,45,52
+activeForeground=242,244,248
+inactiveBackground=48,51,58
+inactiveForeground=198,202,210

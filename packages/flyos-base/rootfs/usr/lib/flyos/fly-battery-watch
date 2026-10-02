@@ -1,0 +1,73 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+"""Native-session low-battery warnings for Fly OS.
+
+Plasma PowerDevil is optional in the Fly native session, so this tiny watcher
+covers the safety-critical user notification without taking over suspend or
+charging policy. It never changes power settings automatically.
+"""
+from __future__ import annotations
+
+import sys
+import time
+from pathlib import Path
+sys.path.insert(0, "/usr/lib/flyos")
+from flyplatform import notify as fly_notify
+
+
+def battery() -> tuple[int | None, str]:
+    values: list[int] = []
+    states: list[str] = []
+    for bat in Path("/sys/class/power_supply").glob("BAT*"):
+        try:
+            values.append(int((bat / "capacity").read_text(encoding="utf-8").strip()))
+            states.append((bat / "status").read_text(encoding="utf-8").strip().casefold())
+        except (OSError, ValueError):
+            continue
+    if not values:
+        return None, "unknown"
+    state = "discharging" if any(x == "discharging" for x in states) else (states[0] if states else "unknown")
+    return min(values), state
+
+
+def notify(summary: str, body: str, *, critical: bool = False, persistent: bool = False) -> None:
+    fly_notify(summary, body, urgency=2 if critical else 1, expire_ms=0 if persistent else 9000)
+
+
+def level_for(capacity: int) -> int:
+    if capacity <= 5:
+        return 5
+    if capacity <= 10:
+        return 10
+    if capacity <= 20:
+        return 20
+    return 100
+
+
+def main() -> int:
+    warned = 100
+    while True:
+        capacity, state = battery()
+        if capacity is None:
+            time.sleep(60)
+            continue
+        if state != "discharging":
+            warned = 100
+        else:
+            level = level_for(capacity)
+            # Notify only when crossing into a more severe threshold.
+            if level < warned:
+                if level == 20:
+                    notify("Bateria baixa", f"Restam {capacity}% de bateria. Considere conectar o carregador.")
+                elif level == 10:
+                    notify("Bateria muito baixa", f"Restam {capacity}%. Salve seu trabalho e conecte o carregador.", critical=True)
+                elif level == 5:
+                    notify("Bateria crítica", f"Restam apenas {capacity}%. Conecte a energia agora para evitar perda de trabalho.", critical=True, persistent=True)
+                warned = level
+            if capacity >= 25:
+                warned = 100
+        time.sleep(30)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

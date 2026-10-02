@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Fly Notification Center
+Exec=fly-shellctl notifications
+Icon=preferences-desktop-notification
+NoDisplay=true
+OnlyShowIn=FlyOS;
+X-KDE-Shortcuts=Meta+N

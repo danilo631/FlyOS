@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Fly Backup
+Comment=Configure automatic backups and restore files
+Exec=fly-backup configure
+Icon=drive-harddisk
+Categories=Utility;System;
+Keywords=backup;restore;files;Fly;

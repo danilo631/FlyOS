@@ -1,0 +1,13 @@
+Package: flyos-performance
+Version: @VERSION@
+Section: utils
+Priority: optional
+Architecture: all
+Maintainer: Fly OS Project <devnull@example.invalid>
+Depends: flyos-core (= @VERSION@), python3-pyqt6
+Recommends: pipewire, wireplumber
+Replaces: flyos-base (<< 0.8.0~)
+Breaks: flyos-base (<< 0.8.0~)
+Description: Fly OS adaptive performance and activity tools
+ Provides a low-overhead PSI/procfs performance monitor and Fly Activity. It
+ informs shell adaptation without forcing schedulers, governors or process kills.

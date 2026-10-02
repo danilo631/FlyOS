@@ -1,0 +1,142 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+"""Low-overhead local performance state for Fly OS.
+
+Reads procfs/sysfs directly so the shell does not need to spawn monitoring
+utilities. The state file lives in XDG_RUNTIME_DIR and disappears at logout.
+"""
+from __future__ import annotations
+
+import json
+import os
+import time
+from pathlib import Path
+
+RUNTIME = Path(os.environ.get("XDG_RUNTIME_DIR", f"/run/user/{os.getuid()}"))
+STATE = RUNTIME / "fly-performance.json"
+
+
+def cpu_sample() -> tuple[int, int]:
+    try:
+        fields = Path("/proc/stat").read_text(encoding="utf-8").splitlines()[0].split()[1:]
+        values = [int(v) for v in fields]
+    except (OSError, ValueError, IndexError):
+        return 0, 0
+    idle = values[3] + (values[4] if len(values) > 4 else 0)
+    return sum(values), idle
+
+
+def mem_state() -> tuple[float, int, float]:
+    values: dict[str, int] = {}
+    try:
+        for raw in Path("/proc/meminfo").read_text(encoding="utf-8").splitlines():
+            key, _, rest = raw.partition(":")
+            try:
+                values[key] = int(rest.strip().split()[0])
+            except (ValueError, IndexError):
+                continue
+    except OSError:
+        return 0.0, 0, 0.0
+    total = max(1, values.get("MemTotal", 1))
+    available = max(0, values.get("MemAvailable", 0))
+    used_pct = max(0.0, min(100.0, 100.0 * (total - available) / total))
+    swap_total = values.get("SwapTotal", 0)
+    swap_free = values.get("SwapFree", 0)
+    swap_pct = 0.0 if swap_total <= 0 else max(0.0, min(100.0, 100.0 * (swap_total - swap_free) / swap_total))
+    return used_pct, available // 1024, swap_pct
+
+
+def psi_avg10(resource: str) -> float:
+    try:
+        first = Path(f"/proc/pressure/{resource}").read_text(encoding="utf-8").splitlines()[0]
+        for token in first.split():
+            if token.startswith("avg10="):
+                return float(token.split("=", 1)[1])
+    except (OSError, ValueError, IndexError):
+        pass
+    return 0.0
+
+
+def temperature_c() -> float | None:
+    values: list[float] = []
+    for path in Path("/sys/class/thermal").glob("thermal_zone*/temp"):
+        try:
+            value = float(path.read_text().strip())
+            if value > 1000:
+                value /= 1000.0
+            if 0.0 < value < 130.0:
+                values.append(value)
+        except (OSError, ValueError):
+            continue
+    return max(values) if values else None
+
+
+def loadavg() -> float:
+    try:
+        return float(Path("/proc/loadavg").read_text().split()[0])
+    except (OSError, ValueError, IndexError):
+        return 0.0
+
+
+def write_state(data: dict[str, object]) -> None:
+    RUNTIME.mkdir(parents=True, exist_ok=True)
+    tmp = STATE.with_suffix(".tmp")
+    tmp.write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
+    tmp.chmod(0o600)
+    tmp.replace(STATE)
+
+
+def main() -> int:
+    last_total, last_idle = cpu_sample()
+    last_written: dict[str, object] | None = None
+    while True:
+        time.sleep(2.0)
+        total, idle = cpu_sample()
+        delta_total = max(0, total - last_total)
+        delta_idle = max(0, idle - last_idle)
+        cpu_pct = 0.0 if delta_total <= 0 else 100.0 * (delta_total - delta_idle) / delta_total
+        last_total, last_idle = total, idle
+
+        mem_pct, avail_mb, swap_pct = mem_state()
+        mem_psi = psi_avg10("memory")
+        cpu_psi = psi_avg10("cpu")
+        io_psi = psi_avg10("io")
+        temp = temperature_c()
+
+        # Pressure is intentionally conservative. It changes visual policy only;
+        # it never kills tasks or changes kernel scheduling on its own.
+        if mem_psi >= 10.0 or (mem_pct >= 94.0 and avail_mb < 768):
+            state = "pressure"
+        elif cpu_psi >= 20.0 or cpu_pct >= 92.0 or io_psi >= 15.0:
+            state = "busy"
+        else:
+            state = "normal"
+
+        data: dict[str, object] = {
+            "cpu_percent": round(max(0.0, min(100.0, cpu_pct)), 1),
+            "memory_percent": round(mem_pct, 1),
+            "memory_available_mb": avail_mb,
+            "swap_percent": round(swap_pct, 1),
+            "memory_psi_avg10": round(mem_psi, 2),
+            "cpu_psi_avg10": round(cpu_psi, 2),
+            "io_psi_avg10": round(io_psi, 2),
+            "load1": round(loadavg(), 2),
+            "temperature_c": None if temp is None else round(temp, 1),
+            "state": state,
+            "updated": int(time.time()),
+        }
+        # Always refresh the timestamp every ~10 s, but avoid needless writes
+        # if the measured state is effectively unchanged.
+        comparable = {k: v for k, v in data.items() if k != "updated"}
+        old = {k: v for k, v in (last_written or {}).items() if k != "updated"}
+        stale = not last_written or int(data["updated"]) - int(last_written.get("updated", 0)) >= 10
+        if comparable != old or stale:
+            try:
+                write_state(data)
+                last_written = data
+            except OSError:
+                pass
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -1,0 +1,68 @@
+# Fly OS desktop additions for Ubuntu 26.04 LTS compatibility base.
+# Native Fly session intentionally does not require plasmashell.
+
+# Core native session / hardware services
+kwin-wayland
+kwin-common
+xwayland
+sddm
+network-manager
+pipewire
+wireplumber
+kglobalacceld
+layer-shell-qt
+qml6-module-org-kde-layershell
+python3-pyqt6
+python3-pyqt6.qtqml
+python3-pyqt6.qtquick
+qml6-module-qtquick
+qml6-module-qtquick-controls
+qml6-module-qtquick-layouts
+qml6-module-qtquick-effects
+
+# Essential desktop apps / deep settings
+kdeconnect
+
+# Windows compatibility
+wine
+wine64
+wine-binfmt
+winetricks
+fonts-wine
+cabextract
+
+# Performance / gaming
+gamemode
+mangohud
+gamescope
+power-profiles-daemon
+upower
+switcheroo-control
+pciutils
+systemd-zram-generator
+systemd-oomd
+
+# Sandboxed apps and portals
+flatpak
+xdg-desktop-portal
+xdg-desktop-portal-kde
+
+# Firmware, security and recovery
+fwupd
+ufw
+apparmor-utils
+mokutil
+unattended-upgrades
+btrfs-progs
+snapper
+
+# Backup and private folders
+kup-backup
+bup
+rsync
+plasma-vault
+gocryptfs
+
+# Optional Plasma fallback session
+plasma-workspace
+plasma-session-wayland

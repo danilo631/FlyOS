@@ -1,0 +1,14 @@
+Package: flyos-shell
+Version: @VERSION@
+Section: x11
+Priority: optional
+Architecture: all
+Maintainer: Fly OS Project <devnull@example.invalid>
+Depends: flyos-core (= @VERSION@), flyos-search (= @VERSION@), kwin-wayland, kwin-common, xwayland, kglobalacceld, python3-pyqt6, python3-pyqt6.qtqml, python3-pyqt6.qtquick, python3-dbus, python3-gi, qml6-module-qtquick, qml6-module-qtquick-controls, qml6-module-qtquick-layouts, qml6-module-org-kde-layershell, layer-shell-qt, xdg-desktop-portal, xdg-desktop-portal-kde, xdg-utils
+Recommends: flyos-privacy (= @VERSION@), flyos-performance (= @VERSION@), bluez, swayidle, polkit-kde-agent-1, libkscreenlocker6
+Suggests: plasma-workspace, plasma-session-wayland, konsole
+Replaces: flyos-base (<< 0.6.0~)
+Breaks: flyos-base (<< 0.6.0~)
+Description: Fly OS native Wayland shell and session
+ Provides the Fly desktop, top bar, dock, universal search, quick settings,
+ session lifecycle and local-first desktop services on KWin/Wayland.

@@ -1,0 +1,32 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+from __future__ import annotations
+import json, os, sys
+from pathlib import Path
+from PyQt6.QtWidgets import QApplication,QDialog,QVBoxLayout,QLabel,QListWidget,QPushButton,QHBoxLayout
+
+def path(): return Path(os.environ.get('XDG_RUNTIME_DIR',f'/run/user/{os.getuid()}'))/'flyos-clipboard.json'
+def items():
+    try: return [x for x in json.loads(path().read_text()) if isinstance(x,dict) and x.get('text')]
+    except Exception: return []
+class Dialog(QDialog):
+    def __init__(self):
+        super().__init__(); self.setWindowTitle('Fly Clipboard'); self.resize(560,430)
+        b=QVBoxLayout(self); t=QLabel('Área de transferência'); t.setStyleSheet('font-size:24px;font-weight:700'); b.addWidget(t)
+        h=QLabel('Histórico temporário: é apagado ao encerrar a sessão.'); h.setStyleSheet('color:#9fa9b9'); b.addWidget(h)
+        self.list=QListWidget();
+        for x in items(): self.list.addItem(x['text'].replace('\n',' ↵ ')[:220])
+        b.addWidget(self.list,1); row=QHBoxLayout(); copy=QPushButton('Copiar selecionado'); copy.clicked.connect(self.copy); clear=QPushButton('Limpar'); clear.clicked.connect(self.clear); row.addWidget(copy); row.addWidget(clear); b.addLayout(row)
+        self.setStyleSheet('QDialog{background:#151a23;color:#f7f8fc}QListWidget{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:6px}QListWidget::item{padding:10px;border-radius:8px}QListWidget::item:selected{background:rgba(124,174,255,.25)}QPushButton{min-height:36px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:0 12px}')
+    def copy(self):
+        row=self.list.currentRow(); data=items()
+        if 0<=row<len(data):
+            app=QApplication.instance()
+            if app is not None: app.clipboard().setText(data[row]['text'])
+            self.accept()
+    def clear(self):
+        path().unlink(missing_ok=True); self.list.clear()
+def main():
+    if len(sys.argv)>1 and sys.argv[1]=='clear': path().unlink(missing_ok=True); return 0
+    app=QApplication(sys.argv); d=Dialog(); return d.exec()
+if __name__=='__main__': raise SystemExit(main())

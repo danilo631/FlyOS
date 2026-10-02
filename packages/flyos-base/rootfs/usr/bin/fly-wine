@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+PREFIX="${FLY_WINEPREFIX:-$HOME/.local/share/flyos/wine/default}"
+export WINEPREFIX="$PREFIX"
+
+mkdir -p "$PREFIX"
+
+if [[ $# -eq 0 ]]; then
+  exec winecfg
+fi
+
+case "${1,,}" in
+  *.msi)
+    exec wine msiexec /i "$1" "${@:2}"
+    ;;
+  *)
+    exec wine "$@"
+    ;;
+esac

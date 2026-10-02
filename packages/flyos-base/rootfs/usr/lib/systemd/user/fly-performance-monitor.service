@@ -1,0 +1,16 @@
+[Unit]
+Description=Fly OS lightweight performance monitor
+PartOf=flyos-session.target
+After=graphical-session-pre.target
+
+[Service]
+Type=simple
+ExecStart=/usr/lib/flyos/fly-performance-monitor
+Restart=on-failure
+RestartSec=3
+Nice=8
+NoNewPrivileges=yes
+PrivateTmp=yes
+
+[Install]
+WantedBy=flyos-session.target

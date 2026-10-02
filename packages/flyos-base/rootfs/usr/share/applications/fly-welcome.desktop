@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Welcome to Fly OS
+Comment=Configure the first Fly OS experience
+Exec=/usr/lib/flyos/fly-welcome.py --force
+Icon=flyos
+Categories=Settings;System;
+StartupNotify=true

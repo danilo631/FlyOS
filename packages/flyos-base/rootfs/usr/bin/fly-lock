@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+runtime="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+mkdir -p "$runtime"
+# Avoid launching two PAM greeters on rapid lock/idle events. Keep fd 9 open in
+# the greeter so the lock is held until it exits.
+if command -v flock >/dev/null 2>&1; then
+  exec 9>"$runtime/fly-lock.lock"
+  flock -n 9 || exit 0
+fi
+
+# KWin/Plasma currently uses KDE's KScreenLocker stack. In the native Fly
+# session we reuse its PAM-backed greeter rather than inventing authentication.
+LOCKER=""
+for candidate in \
+  /usr/lib/x86_64-linux-gnu/libexec/kscreenlocker_greet \
+  /usr/lib/aarch64-linux-gnu/libexec/kscreenlocker_greet \
+  /usr/lib/libexec/kscreenlocker_greet; do
+  [[ -x "$candidate" ]] && { LOCKER="$candidate"; break; }
+done
+if [[ -z "$LOCKER" ]]; then
+  LOCKER="$(find /usr/lib -type f -path '*/libexec/kscreenlocker_greet' -perm -111 -print -quit 2>/dev/null || true)"
+fi
+if [[ -n "$LOCKER" ]]; then
+  exec "$LOCKER" --immediateLock
+fi
+
+# Other Wayland compositors may expose ext-session-lock-v1 and support swaylock.
+if command -v swaylock >/dev/null 2>&1; then
+  exec swaylock --color 11161fff --inside-color 1b2430dd --ring-color 7caeffcc --key-hl-color ffffffff --line-color 00000000 --separator-color 00000000 --indicator-radius 92 --indicator-thickness 8 --show-failed-attempts
+fi
+
+loginctl lock-session "${XDG_SESSION_ID:-self}" || {
+  echo "Fly OS: no lock backend is available" >&2
+  exit 1
+}

@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=Fly Volume Down
+Exec=fly-volume down
+NoDisplay=true
+X-KDE-Shortcuts=Volume Down

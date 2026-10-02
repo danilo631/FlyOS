@@ -1,0 +1,14 @@
+[Unit]
+Description=Fly Search local filename index
+PartOf=flyos-session.target
+
+[Service]
+Slice=fly-background.slice
+Type=oneshot
+ExecStart=/usr/bin/fly-indexer --quiet
+Nice=15
+IOSchedulingClass=idle
+CPUSchedulingPolicy=batch
+ProtectSystem=strict
+PrivateTmp=true
+NoNewPrivileges=true

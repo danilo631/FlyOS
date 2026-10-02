@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Fly Audio
+Comment=Áudio e microfone
+Exec=fly-audio
+Icon=audio-volume-high
+Categories=Settings;AudioVideo;
+Terminal=false

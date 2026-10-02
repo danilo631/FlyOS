@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Fly Health
+Comment=System health, security and recovery status
+Icon=utilities-system-monitor
+Exec=fly-health
+Terminal=false
+Categories=System;Settings;

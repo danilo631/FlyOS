@@ -1,0 +1,83 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+"""Session-local microphone/camera indicators with conservative polling."""
+from __future__ import annotations
+import json, os, shutil, subprocess, time
+from pathlib import Path
+
+RUNTIME=Path(os.environ.get('XDG_RUNTIME_DIR', f'/run/user/{os.getuid()}'))
+STATE=RUNTIME/'fly-privacy.json'
+
+def out(argv, timeout=0.8):
+    try:
+        return subprocess.run(argv,text=True,stdout=subprocess.PIPE,stderr=subprocess.DEVNULL,timeout=timeout,check=False).stdout.strip()
+    except (OSError, subprocess.TimeoutExpired): return ''
+
+def microphone_clients():
+    if not shutil.which('wpctl'): return []
+    text=out(['wpctl','status','-n'],1.0); clients=[]; current='' ; in_streams=False
+    for raw in text.splitlines():
+        line=raw.strip()
+        if line.endswith('Streams:'):
+            in_streams=True; continue
+        if not in_streams: continue
+        if line and not raw.startswith((' ', '\t', '│', '├', '└')) and line.endswith(':'):
+            break
+        import re
+        m=re.search(r'\b\d+\.\s+(.+)$', line)
+        if m and 'input_' not in line and 'output_' not in line:
+            current=m.group(1).strip().split(' [',1)[0]
+            continue
+        if current and ('input_' in line or 'capture' in line.casefold()):
+            if current not in clients: clients.append(current)
+    return clients[:12]
+
+def video_devices():
+    return {str(p.resolve()) for p in Path('/dev').glob('video*') if p.exists()}
+
+def camera_clients(devices):
+    if not devices: return []
+    names=[]; uid=os.getuid()
+    # Camera FD inspection is substantially more expensive than checking audio;
+    # the main loop therefore runs it on a slower cadence.
+    for proc in Path('/proc').iterdir():
+        if not proc.name.isdigit(): continue
+        try:
+            if proc.stat().st_uid != uid: continue
+            hit=False
+            for link in (proc/'fd').iterdir():
+                try:
+                    if str(link.resolve()) in devices: hit=True; break
+                except OSError: pass
+            if not hit: continue
+            comm=(proc/'comm').read_text(errors='ignore').strip() or f'PID {proc.name}'
+            if comm not in names: names.append(comm)
+        except (OSError, PermissionError): continue
+    return names[:12]
+
+def write(state):
+    RUNTIME.mkdir(parents=True,exist_ok=True); tmp=STATE.with_suffix('.tmp')
+    tmp.write_text(json.dumps(state,ensure_ascii=False,separators=(',',':'))+'\n',encoding='utf-8'); tmp.chmod(0o600); tmp.replace(STATE)
+
+def main():
+    last=None; mic=[]; cam=[]; devices=set(); next_mic=0.0; next_cam=0.0; next_devices=0.0
+    while True:
+        now=time.monotonic()
+        if now >= next_mic:
+            mic=microphone_clients(); next_mic=now+2.0
+        if now >= next_devices:
+            devices=video_devices(); next_devices=now+10.0
+        if now >= next_cam:
+            cam=camera_clients(devices); next_cam=now+4.0
+        state={'microphone_active':bool(mic),'camera_active':bool(cam),'microphone_apps':mic,'camera_apps':cam,'updated':int(time.time())}
+        comparable={k:v for k,v in state.items() if k!='updated'}
+        old={k:v for k,v in (last or {}).items() if k!='updated'}
+        stale=not last or state['updated']-int(last.get('updated',0)) >= 12
+        if comparable != old or stale:
+            try: write(state); last=state
+            except OSError: pass
+        # Sleep until the next real sensor query instead of waking twice per
+        # second just to discover that no polling deadline has arrived.
+        next_due = min(next_mic, next_cam, next_devices)
+        time.sleep(max(0.25, min(2.0, next_due - time.monotonic())))
+if __name__=='__main__': raise SystemExit(main())

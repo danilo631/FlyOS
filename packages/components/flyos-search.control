@@ -1,0 +1,12 @@
+Package: flyos-search
+Version: @VERSION@
+Section: utils
+Priority: optional
+Architecture: all
+Maintainer: Fly OS Project <devnull@example.invalid>
+Depends: flyos-core (= @VERSION@), python3
+Replaces: flyos-base (<< 0.6.0~)
+Breaks: flyos-base (<< 0.6.0~)
+Description: Fly OS local-first search and indexing
+ Provides the private per-user filename index and command-line search service used
+ by Fly Shell. File contents are never indexed and no query leaves the computer.

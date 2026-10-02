@@ -1,0 +1,12 @@
+[Unit]
+Description=Initialize Fly OS user defaults
+PartOf=flyos-session.target
+After=fly-shell.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/lib/flyos/fly-first-login
+RemainAfterExit=yes
+
+[Install]
+WantedBy=flyos-session.target

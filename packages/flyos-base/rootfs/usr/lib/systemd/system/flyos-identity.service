@@ -1,0 +1,13 @@
+[Unit]
+Description=Apply Fly OS distribution identity
+After=local-fs.target
+Before=display-manager.service
+ConditionPathExists=/usr/lib/flyos/os-release
+
+[Service]
+Type=oneshot
+ExecStart=/usr/lib/flyos/fly-identity
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

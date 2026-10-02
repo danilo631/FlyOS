@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Fly OS first login
+Exec=/usr/lib/flyos/fly-first-login
+OnlyShowIn=KDE;
+X-KDE-autostart-after=panel
+NoDisplay=true

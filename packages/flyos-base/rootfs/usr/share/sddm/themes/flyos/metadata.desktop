@@ -1,0 +1,12 @@
+[SddmGreeterTheme]
+Name=Fly OS
+Description=Fly OS login theme
+Author=Fly OS Project
+Copyright=(c) Fly OS Project
+License=GPL-3.0-or-later
+Type=sddm-theme
+Version=0.1
+MainScript=Main.qml
+ConfigFile=theme.conf
+Theme-Id=flyos
+Theme-API=2.0

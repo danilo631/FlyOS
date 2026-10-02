@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Fly Gaming
+Comment=Launch games with Fly OS optimizations
+Icon=applications-games
+Exec=fly-center
+Terminal=false
+Categories=Game;System;

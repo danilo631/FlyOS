@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+pause() { printf '\n'; read -rp "Pressione Enter para continuar…" _ || true; }
+repair_packages() {
+  echo "Reparando estado do dpkg/APT…"
+  sudo dpkg --configure -a
+  sudo apt-get -f install
+}
+reset_shell() {
+  cfg="${XDG_CONFIG_HOME:-$HOME/.config}/flyos"
+  stamp="$(date +%Y%m%d-%H%M%S)"
+  backup="${cfg}.recovery-${stamp}"
+  if [[ -d "$cfg" ]]; then
+    mv "$cfg" "$backup"
+    echo "Configuração anterior salva em: $backup"
+  fi
+  mkdir -p "$cfg"
+  systemctl --user restart fly-shell.service >/dev/null 2>&1 || true
+  echo "Preferências do Fly Shell restauradas para os padrões."
+}
+offline_log() {
+  echo 'Estado:'
+  fly-offline-update status || true
+  echo
+  if [[ -r /var/lib/flyos/offline-update/offline-update.log ]]; then
+    tail -n 120 /var/lib/flyos/offline-update/offline-update.log
+  else
+    echo 'Nenhum log de atualização offline ainda.'
+  fi
+}
+
+while true; do
+  clear 2>/dev/null || true
+  cat <<'TXT'
+Fly Recovery
+============
+1) Diagnóstico rápido (Fly Doctor)
+2) Estado/lista de snapshots
+3) Criar snapshot manual
+4) Reparar APT/dpkg
+5) Reconstruir initramfs e GRUB
+6) Restaurar preferências do Fly Shell
+7) Ver serviços Fly com falha
+8) Abrir logs recentes da sessão Fly
+9) Estado/log da atualização offline
+10) Cancelar atualização offline preparada
+11) Sair
+TXT
+  read -rp "Escolha: " choice || exit 0
+  case "$choice" in
+    1) fly-doctor; pause ;;
+    2) fly-snapshot status; echo; fly-snapshot list 2>/dev/null || true; pause ;;
+    3) read -rp "Descrição do snapshot: " desc; fly-snapshot create "${desc:-Fly Recovery snapshot}"; pause ;;
+    4) repair_packages; pause ;;
+    5) sudo update-initramfs -u; sudo update-grub; pause ;;
+    6) reset_shell; pause ;;
+    7) systemctl --user --failed --no-pager || true; pause ;;
+    8) journalctl --user -u fly-shell.service -u fly-notifications.service -u fly-indexer.service -n 140 --no-pager || true; pause ;;
+    9) offline_log; pause ;;
+    10) fly-offline-update cancel; pause ;;
+    11|q|Q) exit 0 ;;
+    *) echo "Opção inválida"; sleep 1 ;;
+  esac
+done

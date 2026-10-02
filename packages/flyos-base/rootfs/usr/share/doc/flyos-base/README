@@ -1,0 +1,10 @@
+Fly OS base integration package.
+
+Visual profiles:
+  fly-glass glass
+  fly-glass balanced
+  fly-glass performance
+
+Windows compatibility:
+  fly-wine
+  fly-wine-repair

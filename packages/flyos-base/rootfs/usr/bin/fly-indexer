@@ -1,0 +1,161 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+"""Local filename index for Fly Search.
+
+Only path metadata is indexed; file contents are never opened. The database is
+per-user and lives under ~/.cache/flyos.
+"""
+from __future__ import annotations
+import fcntl
+import json
+import os
+import sqlite3
+import sys
+import time
+from pathlib import Path
+
+MAX_ITEMS = 120_000
+CACHE = Path.home() / ".cache/flyos"
+DB = CACHE / "search.db"
+TMP = CACHE / "search.db.new"
+LOCK = CACHE / "index.lock"
+
+
+def xdg_dirs() -> list[Path]:
+    home = Path.home()
+    defaults = [home / x for x in ("Desktop", "Documents", "Downloads", "Music", "Pictures", "Videos")]
+    cfg = home / ".config/user-dirs.dirs"
+    values: list[Path] = []
+    try:
+        for line in cfg.read_text(encoding="utf-8").splitlines():
+            if not line.startswith("XDG_") or "=" not in line:
+                continue
+            raw = line.split("=", 1)[1].strip().strip('"').replace("$HOME", str(home))
+            p = Path(raw).expanduser()
+            if p != home and p.exists():
+                values.append(p)
+    except OSError:
+        pass
+    for p in defaults:
+        if p.exists():
+            values.append(p)
+    out: list[Path] = []
+    seen: set[str] = set()
+    for p in values:
+        key = str(p.resolve())
+        if key not in seen:
+            seen.add(key)
+            out.append(p)
+    return out
+
+
+def ignored(path: Path) -> bool:
+    name = path.name
+    return name.startswith(".") or name in {"node_modules", "__pycache__", ".git", ".cache", ".local"}
+
+
+
+def low_battery() -> bool:
+    charging = False
+    capacities: list[int] = []
+    for bat in Path("/sys/class/power_supply").glob("BAT*"):
+        try:
+            status = (bat / "status").read_text(encoding="utf-8").strip().casefold()
+            if status in {"charging", "full", "not charging"}:
+                charging = True
+            capacities.append(int((bat / "capacity").read_text(encoding="utf-8").strip()))
+        except (OSError, ValueError):
+            continue
+    return bool(capacities) and not charging and min(capacities) <= 20
+
+
+def under_pressure() -> bool:
+    runtime = Path(os.environ.get("XDG_RUNTIME_DIR", f"/run/user/{os.getuid()}"))
+    try:
+        data = json.loads((runtime / "fly-performance.json").read_text(encoding="utf-8"))
+        if not isinstance(data, dict):
+            return False
+        updated = int(data.get("updated", 0))
+        return updated > 0 and time.time() - updated < 30 and str(data.get("state", "normal")) == "pressure"
+    except (OSError, ValueError, TypeError, json.JSONDecodeError):
+        return False
+
+
+def should_defer() -> str | None:
+    if low_battery():
+        return "battery is at or below 20% and not charging"
+    if under_pressure():
+        return "the desktop is under memory/I/O pressure"
+    return None
+
+
+def main() -> int:
+    CACHE.mkdir(parents=True, exist_ok=True, mode=0o700)
+    try:
+        CACHE.chmod(0o700)
+    except OSError:
+        pass
+    quiet = "--quiet" in sys.argv
+    force = "--force" in sys.argv
+    if quiet and not force:
+        reason = should_defer()
+        if reason:
+            return 0
+    lock = LOCK.open("a+")
+    try:
+        LOCK.chmod(0o600)
+    except OSError:
+        pass
+    try:
+        fcntl.flock(lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        if not quiet:
+            print("Fly Search: an index refresh is already running", file=sys.stderr)
+        lock.close()
+        return 0
+    TMP.unlink(missing_ok=True)
+    con = sqlite3.connect(TMP)
+    con.execute("PRAGMA journal_mode=OFF")
+    con.execute("PRAGMA synchronous=OFF")
+    con.execute("CREATE VIRTUAL TABLE files_fts USING fts5(path UNINDEXED, name, parent, tokenize='unicode61 remove_diacritics 2')")
+    inserted = 0
+    batch: list[tuple[str, str, str]] = []
+
+    for root in xdg_dirs():
+        for current, dirs, files in os.walk(root, topdown=True, followlinks=False):
+            dirs[:] = [d for d in dirs if not ignored(Path(d))]
+            current_path = Path(current)
+            for name in dirs + files:
+                if name.startswith("."):
+                    continue
+                p = current_path / name
+                batch.append((str(p), name, str(current_path)))
+                inserted += 1
+                if len(batch) >= 1000:
+                    con.executemany("INSERT INTO files_fts(path,name,parent) VALUES(?,?,?)", batch)
+                    batch.clear()
+                if inserted >= MAX_ITEMS:
+                    break
+            if inserted >= MAX_ITEMS:
+                break
+        if inserted >= MAX_ITEMS:
+            break
+
+    if batch:
+        con.executemany("INSERT INTO files_fts(path,name,parent) VALUES(?,?,?)", batch)
+    con.commit()
+    con.close()
+    TMP.replace(DB)
+    try:
+        DB.chmod(0o600)
+    except OSError:
+        pass
+    fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
+    lock.close()
+    if not quiet:
+        print(f"Fly Search: {inserted} itens indexados em {DB}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

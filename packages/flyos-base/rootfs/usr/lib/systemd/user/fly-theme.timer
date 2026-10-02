@@ -1,0 +1,11 @@
+[Unit]
+Description=Fly OS automatic light/dark schedule
+PartOf=flyos-session.target
+
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec=15min
+AccuracySec=2min
+
+[Install]
+WantedBy=flyos-session.target

@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -euo pipefail
+STATE_DIR=/var/lib/flyos/offline-update
+STATE="$STATE_DIR/state"
+cmd="${1:-status}"
+case "$cmd" in
+  status)
+    if [[ -r "$STATE" ]]; then cat "$STATE"; else echo 'state=idle'; fi
+    [[ -L /system-update ]] && echo 'scheduled=yes' || echo 'scheduled=no'
+    ;;
+  prepare)
+    command -v pkexec >/dev/null 2>&1 || { echo 'PolicyKit/pkexec is required.' >&2; exit 4; }
+    exec pkexec /usr/lib/flyos/fly-offline-update-helper prepare
+    ;;
+  cancel)
+    command -v pkexec >/dev/null 2>&1 || { echo 'PolicyKit/pkexec is required.' >&2; exit 4; }
+    exec pkexec /usr/lib/flyos/fly-offline-update-helper cancel
+    ;;
+  reboot)
+    [[ -L /system-update ]] || { echo 'No offline update is scheduled.' >&2; exit 3; }
+    exec systemctl reboot
+    ;;
+  *) echo 'Usage: fly-offline-update {status|prepare|cancel|reboot}' >&2; exit 2 ;;
+esac

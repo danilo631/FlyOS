@@ -1,0 +1,12 @@
+[Unit]
+Description=Fly OS first-boot security defaults
+After=local-fs.target
+ConditionPathExists=!/var/lib/flyos/security-initialized-v1
+
+[Service]
+Type=oneshot
+ExecStart=/usr/lib/flyos/fly-security-init
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

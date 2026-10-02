@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Fly Clipboard
+Exec=fly-clipboard
+Icon=edit-paste
+NoDisplay=true
+OnlyShowIn=FlyOS;
+X-KDE-Shortcuts=Meta+Shift+V

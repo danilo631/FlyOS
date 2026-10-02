@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=Fly Media Previous
+Exec=fly-media previous
+NoDisplay=true
+X-KDE-Shortcuts=Media Previous

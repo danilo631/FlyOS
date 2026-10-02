@@ -1,0 +1,12 @@
+[Unit]
+Description=Fly OS adaptive AC/battery profile timer
+PartOf=flyos-session.target
+
+[Timer]
+OnBootSec=25s
+OnUnitActiveSec=2min
+AccuracySec=20s
+Persistent=false
+
+[Install]
+WantedBy=flyos-session.target

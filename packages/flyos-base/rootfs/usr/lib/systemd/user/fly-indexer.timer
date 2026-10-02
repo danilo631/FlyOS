@@ -1,0 +1,12 @@
+[Unit]
+Description=Refresh Fly Search index
+PartOf=flyos-session.target
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=30min
+RandomizedDelaySec=4min
+Persistent=true
+
+[Install]
+WantedBy=flyos-session.target

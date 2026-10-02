@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -e
+case "${1:-}" in
+  configure)
+    if command -v update-alternatives >/dev/null 2>&1; then
+      update-alternatives --install /usr/share/plymouth/themes/default.plymouth default.plymouth /usr/share/plymouth/themes/flyos/flyos.plymouth 200 || true
+    fi
+    command -v update-desktop-database >/dev/null 2>&1 && update-desktop-database -q /usr/share/applications || true
+    command -v update-initramfs >/dev/null 2>&1 && update-initramfs -u || true
+    command -v update-grub >/dev/null 2>&1 && update-grub || true
+  ;;
+esac
+exit 0

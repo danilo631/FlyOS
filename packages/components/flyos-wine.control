@@ -1,0 +1,13 @@
+Package: flyos-wine
+Version: @VERSION@
+Section: otherosfs
+Priority: optional
+Architecture: all
+Maintainer: Fly OS Project <devnull@example.invalid>
+Depends: flyos-core (= @VERSION@), wine | wine64
+Recommends: wine64, wine-binfmt, winetricks, fonts-wine, gamemode, gamescope, mangohud
+Replaces: flyos-base (<< 0.6.0~)
+Breaks: flyos-base (<< 0.6.0~)
+Description: Fly OS Windows application compatibility integration
+ Provides isolated Wine prefixes, repair helpers, launch handlers and desktop
+ integration for Windows applications.

@@ -1,0 +1,95 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+from __future__ import annotations
+import json, os, signal, shutil, time
+from pathlib import Path
+from PyQt6.QtCore import QTimer, Qt
+from PyQt6.QtWidgets import (QApplication, QFrame, QHBoxLayout, QLabel, QMainWindow,
+    QMessageBox, QProgressBar, QPushButton, QTableWidget, QTableWidgetItem,
+    QVBoxLayout, QWidget, QHeaderView)
+
+RUNTIME = Path(os.environ.get("XDG_RUNTIME_DIR", f"/run/user/{os.getuid()}"))
+STATE = RUNTIME / "fly-performance.json"
+
+
+def fmt_mb(kb: int) -> str:
+    return f"{kb / 1024:.0f} MB" if kb < 1024 * 1024 else f"{kb / 1024 / 1024:.1f} GB"
+
+
+def meminfo() -> tuple[int, int, int, int]:
+    d = {}
+    try:
+        for line in Path('/proc/meminfo').read_text().splitlines():
+            k, _, v = line.partition(':')
+            try: d[k] = int(v.strip().split()[0])
+            except (ValueError, IndexError): pass
+    except OSError: pass
+    total=d.get('MemTotal',0); avail=d.get('MemAvailable',0); st=d.get('SwapTotal',0); sf=d.get('SwapFree',0)
+    return total, max(0,total-avail), st, max(0,st-sf)
+
+
+def process_snapshot():
+    rows=[]; uid=os.getuid()
+    for p in Path('/proc').iterdir():
+        if not p.name.isdigit(): continue
+        try:
+            if p.stat().st_uid != uid: continue
+            stat=(p/'stat').read_text().split(); status=(p/'status').read_text().splitlines()
+            rss=0
+            for line in status:
+                if line.startswith('VmRSS:'):
+                    rss=int(line.split()[1]); break
+            ticks=int(stat[13])+int(stat[14]); name=(p/'comm').read_text(errors='ignore').strip() or p.name
+            rows.append((int(p.name),name,rss,ticks))
+        except (OSError,ValueError,IndexError,PermissionError): continue
+    return rows
+
+class Window(QMainWindow):
+    def __init__(self):
+        super().__init__(); self.setWindowTitle('Fly Activity'); self.resize(820,600)
+        root=QWidget(); self.setCentralWidget(root); lay=QVBoxLayout(root); lay.setContentsMargins(22,22,22,22); lay.setSpacing(12)
+        title=QLabel('Fly Activity'); title.setStyleSheet('font-size:28px;font-weight:700'); lay.addWidget(title)
+        self.summary=QLabel(); self.summary.setStyleSheet('color:#aab4c8'); lay.addWidget(self.summary)
+        cards=QHBoxLayout(); self.cpu=self.card('CPU'); self.ram=self.card('Memória'); self.swap=self.card('Swap'); self.disk=self.card('Disco'); cards.addWidget(self.cpu[0]); cards.addWidget(self.ram[0]); cards.addWidget(self.swap[0]); cards.addWidget(self.disk[0]); lay.addLayout(cards)
+        self.table=QTableWidget(0,4); self.table.setHorizontalHeaderLabels(['Processo','PID','CPU médio','Memória'])
+        self.table.horizontalHeader().setSectionResizeMode(0,QHeaderView.ResizeMode.Stretch)
+        self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows); self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers); lay.addWidget(self.table,1)
+        row=QHBoxLayout(); row.addStretch(1); end=QPushButton('Encerrar processo selecionado'); end.clicked.connect(self.end_process); row.addWidget(end); lay.addLayout(row)
+        self.setStyleSheet('QMainWindow,QWidget{background:#111722;color:#f6f8fb} QFrame{background:#1b2330;border-radius:15px} QProgressBar{height:8px;border:0;background:#293345;border-radius:4px} QProgressBar::chunk{background:#78aef8;border-radius:4px} QTableWidget{background:#151d29;border:1px solid #273348;border-radius:12px;gridline-color:#273348} QPushButton{background:#27364a;border:1px solid #3b4b62;border-radius:9px;padding:8px 13px} QPushButton:hover{background:#32445d}')
+        self.prev_proc={}; self.prev_proc_time=time.monotonic()
+        self.timer=QTimer(self); self.timer.timeout.connect(self.refresh); self.timer.start(2000); self.refresh()
+    def card(self,name):
+        f=QFrame(); l=QVBoxLayout(f); t=QLabel(name); t.setStyleSheet('font-weight:700'); v=QLabel('—'); v.setStyleSheet('font-size:20px'); p=QProgressBar(); p.setRange(0,100); l.addWidget(t); l.addWidget(v); l.addWidget(p); return f,v,p
+    def state(self):
+        try: return json.loads(STATE.read_text())
+        except (OSError,json.JSONDecodeError): return {}
+    def refresh(self):
+        s=self.state(); total,used,st,su=meminfo(); cpu=float(s.get('cpu_percent',0)); mp=0 if total<=0 else 100*used/total; sp=0 if st<=0 else 100*su/st
+        du=shutil.disk_usage('/')
+        disk_pct=100*du.used/max(1,du.total)
+        for item,pct,text in ((self.cpu,cpu,f'{cpu:.0f}%'),(self.ram,mp,f'{fmt_mb(used)} / {fmt_mb(total)}'),(self.swap,sp,f'{fmt_mb(su)} / {fmt_mb(st)}'),(self.disk,disk_pct,f'{du.free/(1024**3):.1f} GB livres')):
+            item[1].setText(text); item[2].setValue(int(max(0,min(100,pct))))
+        state=str(s.get('state','normal')); temp=s.get('temperature_c'); self.summary.setText(f'Estado: {state}  •  PSI memória: {s.get("memory_psi_avg10",0)}  •  Carga: {s.get("load1",0)}' + (f'  •  {temp} °C' if temp is not None else ''))
+        now=time.monotonic(); elapsed=max(0.2,now-self.prev_proc_time); ticks=os.sysconf(os.sysconf_names['SC_CLK_TCK']); ncpu=max(1,os.cpu_count() or 1)
+        snap=process_snapshot(); rows=[]; current={}
+        for pid,name,rss,total_ticks in snap:
+            current[pid]=total_ticks; previous=self.prev_proc.get(pid,total_ticks)
+            proc_cpu=max(0.0,100.0*(total_ticks-previous)/(ticks*elapsed*ncpu))
+            rows.append((proc_cpu,rss,pid,name))
+        self.prev_proc=current; self.prev_proc_time=now
+        rows.sort(key=lambda r:(r[0],r[1]),reverse=True); rows=rows[:18]
+        self.table.setRowCount(len(rows))
+        for i,(pcpu,rss,pid,name) in enumerate(rows):
+            vals=(name,str(pid),f'{pcpu:.1f}%',fmt_mb(rss))
+            for c,v in enumerate(vals): self.table.setItem(i,c,QTableWidgetItem(v))
+    def end_process(self):
+        row=self.table.currentRow()
+        if row<0: return
+        try: pid=int(self.table.item(row,1).text()); name=self.table.item(row,0).text()
+        except (ValueError,AttributeError): return
+        if pid in {os.getpid(),os.getppid()}: return
+        if QMessageBox.question(self,'Encerrar processo',f'Encerrar “{name}” (PID {pid})?') != QMessageBox.StandardButton.Yes: return
+        try: os.kill(pid,signal.SIGTERM)
+        except (OSError,PermissionError) as exc: QMessageBox.warning(self,'Não foi possível',str(exc))
+
+app=QApplication([]); app.setApplicationName('Fly Activity'); w=Window(); w.show(); raise SystemExit(app.exec())

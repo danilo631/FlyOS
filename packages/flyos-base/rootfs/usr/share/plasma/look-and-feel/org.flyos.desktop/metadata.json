@@ -1,0 +1,16 @@
+{
+  "KPlugin": {
+    "Authors": [
+      {
+        "Name": "Fly OS Project"
+      }
+    ],
+    "Category": "Global Themes",
+    "Description": "Fly OS glass desktop",
+    "Id": "org.flyos.desktop",
+    "License": "GPL-3.0-or-later",
+    "Name": "Fly OS",
+    "Version": "0.1"
+  },
+  "X-Plasma-APIVersion": "2"
+}

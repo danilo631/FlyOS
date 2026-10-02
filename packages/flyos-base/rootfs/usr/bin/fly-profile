@@ -1,0 +1,143 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+set -euo pipefail
+
+command_name="${1:-status}"
+state_dir="${XDG_CONFIG_HOME:-$HOME/.config}/flyos"
+mode_file="$state_dir/profile-mode"
+effective_file="$state_dir/profile-effective"
+mkdir -p "$state_dir"
+chmod 700 "$state_dir" 2>/dev/null || true
+
+write_state_file() {
+  local path="$1" value="$2" tmp
+  tmp="${path}.tmp.$$"
+  printf '%s\n' "$value" > "$tmp"
+  chmod 600 "$tmp" 2>/dev/null || true
+  mv -f "$tmp" "$path"
+}
+
+set_power() {
+  local requested="$1"
+  if command -v powerprofilesctl >/dev/null 2>&1; then
+    if ! powerprofilesctl set "$requested" >/dev/null 2>&1; then
+      [[ "$requested" == "balanced" ]] || powerprofilesctl set balanced >/dev/null 2>&1 || true
+    fi
+  fi
+}
+
+set_visual() {
+  command -v fly-glass >/dev/null 2>&1 && fly-glass "$1" >/dev/null 2>&1 || true
+}
+
+battery_capacity() {
+  local bat
+  for bat in /sys/class/power_supply/BAT*/capacity; do
+    [[ -r "$bat" ]] || continue
+    cat "$bat"
+    return
+  done
+  echo 100
+}
+
+on_ac() {
+  local ac
+  for ac in /sys/class/power_supply/AC*/online /sys/class/power_supply/ADP*/online /sys/class/power_supply/ACAD*/online; do
+    [[ -r "$ac" ]] || continue
+    [[ "$(cat "$ac")" == "1" ]]
+    return
+  done
+  # Desktops without a battery/AC sysfs node are treated as externally powered.
+  return 0
+}
+
+apply_effective() {
+  local p="$1"
+  case "$p" in
+    battery|power-saver)
+      set_power power-saver
+      set_visual performance
+      ;;
+    balanced)
+      set_power balanced
+      set_visual balanced
+      ;;
+    performance)
+      set_power performance
+      set_visual performance
+      ;;
+    glass)
+      set_power balanced
+      set_visual glass
+      ;;
+    gaming)
+      # GameMode remains per-process through fly-game; this only changes the
+      # surrounding desktop power/effects policy while the user asks for it.
+      set_power performance
+      set_visual performance
+      ;;
+    *) return 2 ;;
+  esac
+  write_state_file "$effective_file" "$p"
+}
+
+auto_effective() {
+  local cap
+  cap="$(battery_capacity)"
+  if ! on_ac; then
+    if [[ "$cap" =~ ^[0-9]+$ ]] && (( cap <= 35 )); then
+      echo power-saver
+    else
+      echo balanced
+    fi
+  else
+    echo balanced
+  fi
+}
+
+refresh_auto() {
+  local mode
+  mode="$(cat "$mode_file" 2>/dev/null || echo auto)"
+  [[ "$mode" == auto ]] || return 0
+  local effective
+  effective="$(auto_effective)"
+  if [[ "$(cat "$effective_file" 2>/dev/null || true)" != "$effective" ]]; then
+    apply_effective "$effective"
+  fi
+  echo "Fly OS auto profile: $effective"
+}
+
+set_manual() {
+  local mode="$1"
+  write_state_file "$mode_file" "$mode"
+  apply_effective "$mode"
+  echo "Fly OS profile applied: $mode"
+}
+
+case "$command_name" in
+  auto)
+    write_state_file "$mode_file" auto
+    refresh_auto
+    ;;
+  refresh)
+    refresh_auto
+    ;;
+  battery|power-saver|balanced|performance|glass|gaming)
+    set_manual "$command_name"
+    ;;
+  mode)
+    cat "$mode_file" 2>/dev/null || echo auto
+    ;;
+  status)
+    printf 'Fly mode: %s\n' "$(cat "$mode_file" 2>/dev/null || echo auto)"
+    printf 'Fly effective profile: %s\n' "$(cat "$effective_file" 2>/dev/null || echo unknown)"
+    if command -v powerprofilesctl >/dev/null 2>&1; then
+      printf 'Power profile: %s\n' "$(powerprofilesctl get 2>/dev/null || echo unavailable)"
+    fi
+    fly-glass status 2>/dev/null || true
+    ;;
+  *)
+    echo "Usage: fly-profile {auto|refresh|battery|power-saver|balanced|performance|glass|gaming|mode|status}" >&2
+    exit 2
+    ;;
+esac

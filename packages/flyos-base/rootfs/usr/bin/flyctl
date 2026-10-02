@@ -1,0 +1,44 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+from __future__ import annotations
+import argparse
+import shutil
+import subprocess
+import sys
+
+
+def call(argv: list[str]) -> int:
+    try:
+        return subprocess.call(argv)
+    except FileNotFoundError:
+        print(f"Fly OS: comando ausente: {argv[0]}", file=sys.stderr)
+        return 127
+
+
+def main() -> int:
+    p = argparse.ArgumentParser(prog="flyctl", description="Controle unificado do Fly OS")
+    sub = p.add_subparsers(dest="cmd", required=True)
+    sub.add_parser("status", help="diagnóstico rápido")
+    prof = sub.add_parser("profile", help="perfil de energia/desempenho")
+    prof.add_argument("name", choices=["power-saver", "balanced", "performance", "gaming"])
+    sub.add_parser("update", help="atualizar o sistema")
+    sub.add_parser("recovery", help="abrir recovery")
+    sub.add_parser("search-index", help="reconstruir índice local")
+    shell = sub.add_parser("shell", help="controlar Fly Shell")
+    shell.add_argument("action", choices=["launcher", "quick", "notifications", "overview", "restart"])
+    args = p.parse_args()
+
+    if args.cmd == "status": return call(["fly-doctor"])
+    if args.cmd == "profile": return call(["fly-profile", args.name])
+    if args.cmd == "update": return call(["fly-update"])
+    if args.cmd == "recovery": return call(["fly-recovery"])
+    if args.cmd == "search-index": return call(["fly-indexer"])
+    if args.cmd == "shell":
+        if args.action == "restart":
+            return call(["systemctl", "--user", "restart", "fly-shell.service"])
+        return call(["fly-shellctl", args.action])
+    return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Fly Battery
+Comment=Battery health, charging and power profiles
+Exec=fly-battery-dashboard
+Icon=battery
+Categories=Settings;System;
+Keywords=battery;power;health;charging;energy;

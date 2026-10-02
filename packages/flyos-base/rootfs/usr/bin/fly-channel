@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -euo pipefail
+FILE=/etc/flyos/channel
+usage(){ echo "Uso: fly-channel [get|set stable|set beta|set dev]"; }
+case "${1:-get}" in
+  get) cat "$FILE" 2>/dev/null || echo dev ;;
+  set)
+    case "${2:-}" in stable|beta|dev) ;; *) usage >&2; exit 2;; esac
+    printf '%s\n' "$2" | pkexec tee "$FILE" >/dev/null
+    echo "Canal Fly OS definido como $2. O canal só afeta repositórios Fly quando um endpoint assinado estiver configurado."
+    ;;
+  *) usage >&2; exit 2;;
+esac

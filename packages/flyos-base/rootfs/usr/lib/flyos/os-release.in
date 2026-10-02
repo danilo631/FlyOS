@@ -1,0 +1,17 @@
+PRETTY_NAME="Fly OS @VERSION@ Developer Preview"
+NAME="Fly OS"
+VERSION_ID="@VERSION@"
+VERSION="@VERSION@ Developer Preview (Resolute)"
+VERSION_CODENAME=resolute
+BUILD_ID=@VERSION@
+VARIANT="Desktop"
+VARIANT_ID=desktop
+ID=flyos
+ID_LIKE="ubuntu debian"
+HOME_URL="https://github.com/danilo631/FlyOS"
+DOCUMENTATION_URL="https://github.com/danilo631/FlyOS/tree/main/docs"
+SUPPORT_URL="https://github.com/danilo631/FlyOS/issues"
+BUG_REPORT_URL="https://github.com/danilo631/FlyOS/issues"
+PRIVACY_POLICY_URL="https://github.com/danilo631/FlyOS/blob/main/PRIVACY.md"
+UBUNTU_CODENAME=resolute
+LOGO=flyos

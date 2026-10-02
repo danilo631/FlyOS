@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Fly Windows Apps
+Comment=Open Windows applications using the Fly OS Wine layer
+Exec=fly-wine %f
+Icon=wine
+Terminal=false
+Categories=System;Utility;
+MimeType=application/x-ms-dos-executable;application/x-msi;
+NoDisplay=false

@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Fly Center
+Comment=Configure Fly OS appearance, performance and Windows compatibility
+Exec=fly-center
+Icon=flyos
+Categories=Settings;System;
+StartupNotify=true

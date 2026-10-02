@@ -1,0 +1,7 @@
+[Unit]
+Description=Refresh Fly OS automatic appearance
+PartOf=flyos-session.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/fly-theme refresh

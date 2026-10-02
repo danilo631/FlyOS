@@ -1,0 +1,34 @@
+---
+componentName: kubuntu
+welcomeStyleCalamares: false
+welcomeExpandingLogo: true
+windowExpanding: normal
+windowSize: 980px,650px
+windowPlacement: center
+
+strings:
+    productName: Fly OS
+    shortProductName: Fly OS
+    version: @VERSION@ Developer Preview
+    shortVersion: @VERSION@
+    versionedName: Fly OS @VERSION@ Developer Preview
+    shortVersionedName: Fly OS @VERSION@
+    bootloaderEntryName: Fly OS
+    productUrl: https://github.com/danilo631/FlyOS/
+    supportUrl: https://github.com/danilo631/FlyOS/issues
+    knownIssuesUrl: https://github.com/danilo631/FlyOS/issues
+    releaseNotesUrl: https://github.com/danilo631/FlyOS/
+
+images:
+    productLogo: "flyos-logo.svg"
+    productIcon: "flyos-logo.svg"
+    productWelcome: "flyos-welcome.svg"
+
+slideshow: "show.qml"
+slideshowAPI: 2
+
+style:
+    sidebarBackground: "#111722"
+    sidebarText: "#EAF2FF"
+    sidebarTextSelect: "#FFFFFF"
+    sidebarTextHighlight: "#315BAA"

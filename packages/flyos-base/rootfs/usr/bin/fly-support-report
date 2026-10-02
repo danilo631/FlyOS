@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+set -euo pipefail
+umask 077
+OUTDIR="${XDG_DOWNLOAD_DIR:-}"
+if [[ -z "$OUTDIR" ]] && command -v xdg-user-dir >/dev/null 2>&1; then OUTDIR="$(xdg-user-dir DOWNLOAD 2>/dev/null || true)"; fi
+OUTDIR="${OUTDIR:-${HOME}/Downloads}"
+mkdir -p "$OUTDIR"
+STAMP="$(date +%Y%m%d-%H%M%S)"
+WORK="$(mktemp -d)"
+trap 'rm -rf "$WORK"' EXIT
+redact(){
+  sed -E \
+    -e 's/([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}/XX:XX:XX:XX:XX:XX/g' \
+    -e 's/([0-9]{1,3}\.){3}[0-9]{1,3}/X.X.X.X/g' \
+    -e "s#${HOME//\#/\\#}#~#g" \
+    -e "s/$(hostname | sed 's/[][\\.^$*+?{}|()]/\\&/g')/[hostname]/g"
+}
+{
+  echo '== os-release =='; cat /etc/os-release 2>/dev/null || true
+  echo; echo '== kernel =='; uname -a
+  echo; echo '== session =='; printf 'type=%s desktop=%s\n' "${XDG_SESSION_TYPE:-}" "${XDG_CURRENT_DESKTOP:-}"
+  echo; echo '== fly packages =='; dpkg-query -W 'flyos-*' 2>/dev/null || true
+  echo; echo '== graphics =='; lspci -nnk 2>/dev/null | grep -EA4 'VGA|3D|Display' || true
+  echo; echo '== usb =='; lsusb 2>/dev/null || true
+  echo; echo '== memory =='; free -h 2>/dev/null || true
+  echo; echo '== storage =='; findmnt -no SOURCE,FSTYPE,SIZE,AVAIL / 2>/dev/null || true
+  echo; echo '== secure boot =='; mokutil --sb-state 2>/dev/null || true
+  echo; echo '== apparmor =='; aa-status 2>/dev/null | head -80 || true
+  echo; echo '== fly services =='; systemctl --user --no-pager --failed 2>/dev/null || true
+  echo; echo '== system failed =='; systemctl --no-pager --failed 2>/dev/null || true
+} | redact > "$WORK/system.txt"
+journalctl --user --since '-2 hours' --no-pager -u 'fly-*' 2>/dev/null | tail -2000 | redact > "$WORK/fly-user-journal.txt" || true
+journalctl --since '-2 hours' --no-pager -p warning..alert 2>/dev/null | tail -1500 | redact > "$WORK/system-warnings.txt" || true
+printf 'Fly OS support report\nGenerated: %s\nPrivacy: home path, hostname, IPv4 addresses and MAC addresses are redacted best-effort. Review before sharing.\n' "$(date -Is)" > "$WORK/README.txt"
+OUT="$OUTDIR/FlyOS-support-${STAMP}.tar.gz"
+tar -C "$WORK" -czf "$OUT" .
+fly-notify 'Fly OS' "Relatório de suporte criado em $OUT" || true
+printf '%s\n' "$OUT"

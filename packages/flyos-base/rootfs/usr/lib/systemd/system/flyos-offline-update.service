@@ -1,0 +1,14 @@
+[Unit]
+Description=Apply staged Fly OS offline system update
+Documentation=man:systemd.offline-updates(7)
+DefaultDependencies=no
+After=local-fs.target
+Before=system-update.target
+OnFailure=reboot.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/lib/flyos/fly-offline-update-helper apply
+TimeoutStartSec=infinity
+StandardOutput=journal+console
+StandardError=journal+console

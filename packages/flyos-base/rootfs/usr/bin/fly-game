@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+set -euo pipefail
+if [[ $# -eq 0 || "${1:-}" == "--help" ]]; then
+  cat <<'TXT'
+Fly Gaming launcher
+Usage:
+  fly-game COMMAND [ARGS...]
+  fly-game --hud COMMAND [ARGS...]
+  fly-game --gamescope COMMAND [ARGS...]
+
+Uses GameMode by default. --hud adds MangoHud. --gamescope also runs the game
+inside Gamescope when available. Ubuntu 26.04's kernel can expose NTSYNC for
+Wine/Proton without Fly OS replacing the kernel scheduler.
+TXT
+  exit 0
+fi
+
+use_hud=0
+use_scope=0
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --hud) use_hud=1; shift ;;
+    --gamescope) use_scope=1; shift ;;
+    --) shift; break ;;
+    *) break ;;
+  esac
+done
+[[ $# -gt 0 ]] || { echo "Missing game command" >&2; exit 2; }
+
+cmd=("$@")
+if (( use_hud )) && command -v mangohud >/dev/null 2>&1; then cmd=(mangohud "${cmd[@]}"); fi
+if (( use_scope )) && command -v gamescope >/dev/null 2>&1; then cmd=(gamescope -f -- "${cmd[@]}"); fi
+if command -v gamemoderun >/dev/null 2>&1; then cmd=(gamemoderun "${cmd[@]}"); fi
+exec "${cmd[@]}"

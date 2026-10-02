@@ -1,0 +1,8 @@
+[Unit]
+Description=Restore Fly OS airplane-mode policy
+PartOf=flyos-session.target
+After=graphical-session-pre.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/fly-airplane reconcile

@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Fly Storage
+Comment=Disk usage and safe cleanup
+Comment[pt_BR]=Uso de disco e limpeza segura
+Exec=fly-storage
+Icon=drive-harddisk
+Terminal=false
+Categories=System;Utility;
+Keywords=storage;disk;cache;trash;armazenamento;disco;limpeza;lixeira;

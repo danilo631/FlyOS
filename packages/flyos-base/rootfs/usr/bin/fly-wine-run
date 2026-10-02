@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set -euo pipefail
+[[ $# -ge 1 ]] || { echo "Usage: fly-wine-run <file.exe|file.msi>" >&2; exit 2; }
+file="$(realpath "$1")"
+[[ -f "$file" ]] || { echo "File not found: $file" >&2; exit 1; }
+export WINEPREFIX="${FLY_WINE_PREFIX:-$HOME/.local/share/flyos/wine/default}"
+mkdir -p "$WINEPREFIX"
+if [[ ! -f "$WINEPREFIX/system.reg" ]]; then
+  wineboot -u
+fi
+case "${file,,}" in
+  *.msi) exec wine msiexec /i "$file" ;;
+  *) exec wine start /unix "$file" ;;
+esac

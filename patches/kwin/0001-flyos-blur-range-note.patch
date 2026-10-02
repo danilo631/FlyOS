@@ -1,0 +1,11 @@
+# Fly OS intentionally does not ship an invasive KWin binary patch in 0.1.
+#
+# KWin 6.6 already implements dual-Kawase blur and exposes BlurStrength.
+# The Fly OS default sets BlurStrength=10 and NoiseStrength=2 through kwinrc.
+#
+# When a source-level visual effect becomes necessary, create it against:
+#   Ubuntu source package: kwin 6.6.x
+#   upstream path: src/plugins/blur/
+#
+# Keep the patch buildable against the exact KWin version in the target Ubuntu
+# point release. KWin effects are ABI-sensitive.

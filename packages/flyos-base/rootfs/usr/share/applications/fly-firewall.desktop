@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Fly Firewall
+Comment=Firewall do sistema
+Exec=fly-firewall
+Icon=security-high
+Categories=Settings;System;
+Terminal=false

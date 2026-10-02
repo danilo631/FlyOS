@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+set -euo pipefail
+case "${1:-}" in
+  --enable-flathub|setup-flathub)
+    command -v flatpak >/dev/null 2>&1 || { echo "Flatpak is not installed" >&2; exit 1; }
+    flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+    echo "Flathub enabled for Fly Apps."
+    exit 0
+    ;;
+  --disable-flathub)
+    flatpak remote-delete flathub
+    exit 0
+    ;;
+  --catalog)
+    command -v plasma-discover >/dev/null 2>&1 && exec plasma-discover
+    ;;
+esac
+exec python3 /usr/lib/flyos/fly-apps.py

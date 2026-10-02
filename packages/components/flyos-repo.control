@@ -1,0 +1,12 @@
+Package: flyos-repo
+Version: @VERSION@
+Section: admin
+Priority: optional
+Architecture: all
+Maintainer: Fly OS Project <devnull@example.invalid>
+Depends: apt, ca-certificates
+Replaces: flyos-base (<< 0.11.0~)
+Breaks: flyos-base (<< 0.11.0~)
+Description: Fly OS signed APT repository configuration
+ Installs the Fly OS archive public key, deb822 repository source and channel
+ switcher. The private signing key is never shipped in the operating system.

@@ -1,0 +1,78 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+MODE="${1:-balanced}"
+
+kwrite() {
+  command -v kwriteconfig6 >/dev/null 2>&1 || return 0
+  kwriteconfig6 "$@"
+}
+
+reconfigure() {
+  fly-platformctl kwin-reconfigure >/dev/null 2>&1 || true
+}
+
+glass_plugin_present() {
+  find /usr/lib /usr/lib64 -type f \( -iname '*glass*.so' -o -iname 'kwin*glass*.so' \) -print -quit 2>/dev/null | grep -q .
+}
+
+set_common() {
+  kwrite --file kwinrc --group Plugins --key overviewEnabled true
+  kwrite --file kwinrc --group Plugins --key slidingpopupsEnabled true
+  kwrite --file kwinrc --group Plugins --key contrastEnabled true
+  kwrite --file kdeglobals --group KDE --key AnimationDurationFactor "$1"
+}
+
+case "$MODE" in
+  glass)
+    set_common 0.82
+    kwrite --file kwinrc --group Plugins --key glideEnabled true
+    kwrite --file kwinrc --group Effect-glide --key Duration 135
+    kwrite --file kwinrc --group Effect-blur --key BlurStrength 12
+    kwrite --file kwinrc --group Effect-blur --key NoiseStrength 2
+    if glass_plugin_present; then
+      kwrite --file kwinrc --group Plugins --key blurEnabled false
+      kwrite --file kwinrc --group Plugins --key translucencyEnabled false
+      kwrite --file kwinrc --group Plugins --key glassEnabled true
+      kwrite --file kwinrc --group Effect-blurplus --key BlurStrength 11
+      kwrite --file kwinrc --group Effect-blurplus --key NoiseStrength 2
+      kwrite --file kwinrc --group Effect-blurplus --key Saturation 1.18
+      kwrite --file kwinrc --group Effect-blurplus --key Brightness 1.06
+      kwrite --file kwinrc --group Effect-blurplus --key Contrast 1.08
+      kwrite --file kwinrc --group Effect-blurplus --key BlurDecorations true
+      kwrite --file kwinrc --group Effect-blurplus --key BlurDocks true
+      kwrite --file kwinrc --group Effect-blurplus --key BlurMenus true
+    else
+      kwrite --file kwinrc --group Plugins --key glassEnabled false
+      kwrite --file kwinrc --group Plugins --key blurEnabled true
+    fi
+    ;;
+  balanced)
+    set_common 0.78
+    kwrite --file kwinrc --group Plugins --key glassEnabled false
+    kwrite --file kwinrc --group Plugins --key blurEnabled true
+    kwrite --file kwinrc --group Plugins --key glideEnabled true
+    kwrite --file kwinrc --group Effect-blur --key BlurStrength 9
+    kwrite --file kwinrc --group Effect-blur --key NoiseStrength 1
+    kwrite --file kwinrc --group Effect-glide --key Duration 120
+    ;;
+  performance)
+    set_common 0.58
+    kwrite --file kwinrc --group Plugins --key glassEnabled false
+    kwrite --file kwinrc --group Plugins --key blurEnabled false
+    kwrite --file kwinrc --group Plugins --key glideEnabled true
+    kwrite --file kwinrc --group Effect-glide --key Duration 90
+    ;;
+  status)
+    echo "Fly Glass profiles: glass | balanced | performance"
+    echo "Glass extension: $(glass_plugin_present && echo available || echo not-installed)"
+    exit 0
+    ;;
+  *)
+    echo "Usage: fly-glass {glass|balanced|performance|status}" >&2
+    exit 2
+    ;;
+esac
+
+reconfigure
+printf 'Fly OS visual profile applied: %s\n' "$MODE"

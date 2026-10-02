@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+CONF=/etc/apt/apt.conf.d/99flyos-amd64v3
+mode="${1:-status}"
+
+loader_help() {
+  local ld
+  for ld in /lib64/ld-linux-x86-64.so.2 /lib/x86_64-linux-gnu/ld-linux-x86-64.so.2; do
+    [[ -x "$ld" ]] || continue
+    "$ld" --help 2>/dev/null || true
+    return
+  done
+}
+
+supports_v3() {
+  [[ "$(dpkg --print-architecture 2>/dev/null || true)" == "amd64" ]] || return 1
+  loader_help | grep -Eq 'x86-64-v3.*(supported|searched)' && return 0
+  # Conservative fallback when the dynamic loader does not expose hwcaps text.
+  local flags
+  flags=" $(grep -m1 '^flags' /proc/cpuinfo 2>/dev/null | cut -d: -f2-) "
+  for f in avx avx2 bmi1 bmi2 fma movbe osxsave; do
+    [[ "$flags" == *" $f "* ]] || return 1
+  done
+}
+
+case "$mode" in
+  status)
+    if supports_v3; then
+      echo "Hardware: amd64v3 capable"
+    else
+      echo "Hardware: amd64v3 not confirmed"
+    fi
+    if [[ -f "$CONF" ]]; then
+      echo "APT amd64v3 variant: enabled"
+    else
+      echo "APT amd64v3 variant: disabled"
+    fi
+    ;;
+  enable)
+    supports_v3 || { echo "Refusing: this CPU was not confirmed as amd64v3 capable." >&2; exit 1; }
+    [[ "$EUID" -eq 0 ]] || { echo "Run: sudo fly-arch-opt enable" >&2; exit 1; }
+    cat > "$CONF" <<'EOC'
+// Fly OS optional architecture-optimized package selection.
+APT::Architecture-Variants "amd64v3";
+EOC
+    apt-get update
+    echo "amd64v3 package preference enabled. Run normal upgrades to adopt available variants."
+    ;;
+  disable)
+    [[ "$EUID" -eq 0 ]] || { echo "Run: sudo fly-arch-opt disable" >&2; exit 1; }
+    rm -f "$CONF"
+    apt-get update
+    echo "amd64v3 package preference disabled."
+    ;;
+  *)
+    echo "Usage: fly-arch-opt {status|enable|disable}" >&2
+    exit 2
+    ;;
+esac

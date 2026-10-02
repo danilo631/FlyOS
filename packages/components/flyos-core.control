@@ -1,0 +1,13 @@
+Package: flyos-core
+Version: @VERSION@
+Section: admin
+Priority: optional
+Architecture: all
+Maintainer: Fly OS Project <devnull@example.invalid>
+Depends: bash, coreutils, systemd, dbus-user-session, network-manager, pipewire, wireplumber, python3, python3-dbus, python3-gi, power-profiles-daemon
+Recommends: systemd-zram-generator, systemd-oomd, ufw, apparmor-utils, unattended-upgrades, fwupd, btrfs-progs, snapper, rsync, gamemode, mangohud, gamescope
+Replaces: flyos-base (<< 0.6.0~)
+Breaks: flyos-base (<< 0.6.0~)
+Description: Fly OS core services and platform integration
+ Identity, security defaults, system tuning, diagnostics, power profiles and
+ hardware-facing helpers shared by all Fly OS components.

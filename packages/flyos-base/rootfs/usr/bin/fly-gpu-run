@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+set -euo pipefail
+if (( $# == 0 )); then echo 'uso: fly-gpu-run <aplicativo> [argumentos...]' >&2; exit 2; fi
+if ! command -v switcherooctl >/dev/null 2>&1; then echo 'switcheroo-control não está disponível' >&2; exit 127; fi
+exec switcherooctl launch "$@"

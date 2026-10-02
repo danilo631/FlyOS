@@ -1,0 +1,13 @@
+[Unit]
+Description=Fly OS notification backend
+PartOf=flyos-session.target
+After=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/lib/flyos/fly-notifications
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=flyos-session.target

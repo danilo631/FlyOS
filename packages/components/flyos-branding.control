@@ -1,0 +1,13 @@
+Package: flyos-branding
+Version: @VERSION@
+Section: x11
+Priority: optional
+Architecture: all
+Maintainer: Fly OS Project <devnull@example.invalid>
+Depends: flyos-core (= @VERSION@), sddm, plymouth
+Recommends: kwin-addons
+Replaces: flyos-base (<< 0.6.0~)
+Breaks: flyos-base (<< 0.6.0~)
+Description: Fly OS visual identity and installer branding
+ Provides wallpapers, icons, SDDM/Plymouth themes, color schemes, fallback Plasma
+ theme and Calamares branding for the Fly OS installation media.

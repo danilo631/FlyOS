@@ -1,0 +1,29 @@
+name: Source and package artifacts
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-package:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install package tools
+        run: sudo apt-get update && sudo apt-get install -y dpkg-dev zip
+      - name: Validate and build modular Fly OS packages
+        run: make lint
+      - name: Create source archive and SBOM
+        run: |
+          VERSION=$(cat VERSION)
+          make sbom
+          zip -r "FlyOS-source-${VERSION}.zip" . \
+            -x '.git/*' '.build/*' '.cache/*' '.packages/*' 'dist/*' '*/__pycache__/*' '*.pyc'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: flyos-${{ github.ref_name }}
+          path: |
+            .packages/*.deb
+            FlyOS-source-*.zip
+            dist/FlyOS-*.spdx.json

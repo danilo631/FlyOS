@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Fly Activity
+Comment=CPU, memory and processes
+Comment[pt_BR]=CPU, memória e processos
+Exec=fly-activity
+Icon=utilities-system-monitor
+Terminal=false
+Categories=System;Monitor;
+Keywords=cpu;ram;memory;process;performance;desempenho;processos;

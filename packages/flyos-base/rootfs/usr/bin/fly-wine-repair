@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+PREFIX="${FLY_WINEPREFIX:-$HOME/.local/share/flyos/wine/default}"
+export WINEPREFIX="$PREFIX"
+
+echo "Fly OS: updating Wine prefix at $PREFIX"
+mkdir -p "$PREFIX"
+wineboot -u
+wineserver -w
+echo "Done."

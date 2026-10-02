@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Startup Items
+Name[pt_BR]=Itens de Inicialização
+Comment=Control applications that start with your session
+Comment[pt_BR]=Controle os aplicativos que iniciam com sua sessão
+Exec=fly-login-items
+Icon=system-run
+Terminal=false
+Categories=Settings;System;
+Keywords=startup;autostart;login;inicialização;iniciar;sessão;

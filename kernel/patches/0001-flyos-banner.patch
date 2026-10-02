@@ -1,0 +1,25 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Fly OS Project <devnull@example.invalid>
+Date: Wed, 30 Sep 2026 00:00:00 -0300
+Subject: [PATCH] init: identify FlyKernel in the boot banner
+
+This intentionally small patch gives development kernels a visible Fly OS
+identity without altering scheduler or security semantics.
+
+SPDX-License-Identifier: GPL-2.0-only
+---
+ init/version-timestamp.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/init/version-timestamp.c b/init/version-timestamp.c
+--- a/init/version-timestamp.c
++++ b/init/version-timestamp.c
+@@ -19,5 +19,5 @@ struct uts_namespace init_uts_ns = {
+ };
+ /* FIXED STRINGS! Don't touch! */
+ const char linux_banner[] =
+-	"Linux version " UTS_RELEASE " (" LINUX_COMPILE_BY "@"
++	"FlyKernel / Linux version " UTS_RELEASE " (" LINUX_COMPILE_BY "@"
+ 	LINUX_COMPILE_HOST ") (" LINUX_COMPILER ") " UTS_VERSION "\n";
+-- 
+2.43.0

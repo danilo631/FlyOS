@@ -1,0 +1,32 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+"""Screenshot via the XDG Desktop Portal, independent of Spectacle."""
+from __future__ import annotations
+import sys, uuid
+from gi.repository import GLib
+import dbus
+import dbus.mainloop.glib
+sys.path.insert(0, '/usr/lib/flyos')
+from flyplatform import notify
+
+dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+bus=dbus.SessionBus(); loop=GLib.MainLoop(); done={'ok':False}
+try:
+    portal=bus.get_object('org.freedesktop.portal.Desktop','/org/freedesktop/portal/desktop')
+    iface=dbus.Interface(portal,'org.freedesktop.portal.Screenshot')
+    token='fly'+uuid.uuid4().hex[:16]
+    request=str(iface.Screenshot('', {'interactive': dbus.Boolean(True), 'handle_token': token}))
+except Exception as e:
+    print(f'Fly Screenshot: {e}', file=sys.stderr); raise SystemExit(1)
+
+def response(code, results):
+    if int(code)==0:
+        uri=str(dict(results).get('uri',''))
+        notify('Fly Screenshot','Captura concluída.' if uri else 'Captura concluída.')
+        done['ok']=True
+    loop.quit()
+
+bus.add_signal_receiver(response, signal_name='Response', dbus_interface='org.freedesktop.portal.Request', path=request)
+GLib.timeout_add_seconds(90, lambda: (loop.quit(), False)[1])
+loop.run()
+raise SystemExit(0 if done['ok'] else 1)

@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Fly GPU
+Comment=Inspect hybrid graphics and launch apps on a discrete GPU
+Exec=fly-gpu
+Icon=video-display
+Categories=Settings;HardwareSettings;
+Keywords=gpu;graphics;nvidia;amd;intel;hybrid;discrete;

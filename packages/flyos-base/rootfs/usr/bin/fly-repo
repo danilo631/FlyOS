@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+FILE=/etc/apt/sources.list.d/flyos.sources
+case "${1:-status}" in
+  status) grep -E '^(URIs|Suites|Components|Signed-By):' "$FILE" 2>/dev/null || true ;;
+  channel)
+    case "${2:-}" in dev|beta|stable) ;; *) echo 'usage: fly-repo channel dev|beta|stable' >&2; exit 2;; esac
+    exec pkexec /usr/lib/flyos/fly-repo-helper "${2}"
+    ;;
+  *) echo 'usage: fly-repo [status|channel dev|beta|stable]' >&2; exit 2 ;;
+esac

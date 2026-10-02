@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+mode="${1:-gui}"
+case "$mode" in
+  gui) exec python3 /usr/lib/flyos/fly-updater.py ;;
+  check)
+    apt list --upgradable 2>/dev/null || true
+    if command -v flatpak >/dev/null 2>&1; then flatpak remote-ls --updates 2>/dev/null || true; fi
+    if command -v fwupdmgr >/dev/null 2>&1; then fwupdmgr get-updates 2>/dev/null || true; fi
+    ;;
+  prepare|offline) exec fly-offline-update prepare ;;
+  status) exec fly-offline-update status ;;
+  cancel) exec fly-offline-update cancel ;;
+  reboot) exec fly-offline-update reboot ;;
+  flatpak)
+    command -v flatpak >/dev/null 2>&1 || { echo 'Flatpak is not installed.' >&2; exit 1; }
+    exec flatpak update --user -y
+    ;;
+  firmware)
+    command -v fwupdmgr >/dev/null 2>&1 || { echo 'fwupd is not installed.' >&2; exit 1; }
+    fwupdmgr refresh --force || true
+    exec fwupdmgr get-updates
+    ;;
+  *) echo 'Usage: fly-update [gui|check|prepare|status|cancel|reboot|flatpak|firmware]' >&2; exit 2 ;;
+esac

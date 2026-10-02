@@ -1,0 +1,13 @@
+[Unit]
+Description=Fly OS local privacy indicator monitor
+PartOf=flyos-session.target
+After=pipewire.service
+
+[Service]
+Type=simple
+ExecStart=/usr/lib/flyos/fly-privacy-monitor
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=flyos-session.target

@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Fly Shell
+Exec=fly-shell
+OnlyShowIn=FlyOS;
+X-KDE-autostart-phase=2
+NoDisplay=true

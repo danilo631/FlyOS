@@ -1,0 +1,19 @@
+---
+- name: install-packages
+  packages:
+@PACKAGES_YAML@
+
+- name: install-debs
+  debs:
+@DEBS_YAML@
+
+- name: shell
+  command: "chroot rootfs /usr/lib/flyos/image-finalize"
+
+- name: add-cmdline-arg
+  arg: "quiet"
+  persist: true
+
+- name: add-cmdline-arg
+  arg: "splash"
+  persist: true

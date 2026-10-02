@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+mode="${1:-configure}"
+case "$mode" in
+  configure|settings)
+    if command -v kcmshell6 >/dev/null 2>&1; then
+      exec kcmshell6 kcm_kup
+    elif command -v systemsettings >/dev/null 2>&1; then
+      exec systemsettings kcm_kup
+    fi
+    echo "Kup backup settings are unavailable." >&2
+    exit 1
+    ;;
+  restore)
+    command -v kup-filedigger >/dev/null 2>&1 || { echo "kup-filedigger is unavailable." >&2; exit 1; }
+    exec kup-filedigger
+    ;;
+  daemon)
+    command -v kup-daemon >/dev/null 2>&1 || { echo "kup-daemon is unavailable." >&2; exit 1; }
+    exec kup-daemon
+    ;;
+  *)
+    echo "Usage: fly-backup {configure|restore|daemon}" >&2
+    exit 2
+    ;;
+esac

@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=Fly Brightness Up
+Exec=fly-brightness up
+NoDisplay=true
+X-KDE-Shortcuts=Monitor Brightness Up

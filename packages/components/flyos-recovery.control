@@ -1,0 +1,13 @@
+Package: flyos-recovery
+Version: @VERSION@
+Section: admin
+Priority: optional
+Architecture: all
+Maintainer: Fly OS Project <devnull@example.invalid>
+Depends: flyos-core (= @VERSION@), apt, systemd, pkexec, util-linux
+Recommends: btrfs-progs, snapper, rsync, kup-backup
+Replaces: flyos-base (<< 0.6.0~), flyos-update (<< 0.6.0-alpha2~)
+Breaks: flyos-base (<< 0.6.0~), flyos-update (<< 0.6.0-alpha2~)
+Description: Fly OS recovery, snapshot and offline-update engine
+ Provides Btrfs/Snapper integration, repair tools, backup entry points and the
+ systemd offline update transaction used by Fly Update.

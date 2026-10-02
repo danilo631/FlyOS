@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Fly Apps
+Comment=Discover and install applications
+Exec=fly-apps
+Icon=plasmadiscover
+Categories=System;Settings;PackageManager;
+StartupNotify=true

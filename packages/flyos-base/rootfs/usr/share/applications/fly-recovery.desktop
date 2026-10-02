@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Fly Recovery
+Comment=Reparo e recuperação do Fly OS
+Exec=fly-recovery-ui
+Icon=document-revert
+Categories=System;
+Terminal=false

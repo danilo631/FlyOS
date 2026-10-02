@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Fly Quick Settings
+Exec=fly-shellctl quick
+Icon=preferences-system
+NoDisplay=true
+OnlyShowIn=FlyOS;
+X-KDE-Shortcuts=Meta+Shift+C

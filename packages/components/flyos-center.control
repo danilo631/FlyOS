@@ -1,0 +1,14 @@
+Package: flyos-center
+Version: @VERSION@
+Section: utils
+Priority: optional
+Architecture: all
+Maintainer: Fly OS Project <devnull@example.invalid>
+Depends: flyos-core (= @VERSION@), python3-pyqt6, network-manager, xdg-utils, pkexec
+Suggests: orca, blueman, plasma-discover, plasma-discover-backend-flatpak, plasma-discover-backend-fwupd
+Recommends: flyos-shell (= @VERSION@), flyos-performance (= @VERSION@), flatpak, kdeconnect, bluez, upower, switcheroo-control, pciutils, kup-backup, plasma-vault, gocryptfs
+Replaces: flyos-base (<< 0.6.0~)
+Breaks: flyos-base (<< 0.6.0~)
+Description: Fly OS integrated control center and onboarding
+ Provides Fly Center, Fly Apps, connectivity, storage/startup tools, first-run experience and unified
+ entry points for desktop settings without requiring Plasma Workspace.

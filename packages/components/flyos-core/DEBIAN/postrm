@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -e
+case "${1:-}" in
+  remove|purge)
+    if grep -q '^ID=flyos$' /etc/os-release 2>/dev/null; then
+      rm -f /etc/os-release
+      [[ -f /usr/lib/os-release ]] && ln -s /usr/lib/os-release /etc/os-release || true
+    fi
+    grep -qi 'Fly OS' /etc/lsb-release 2>/dev/null && rm -f /etc/lsb-release || true
+  ;;
+esac
+exit 0

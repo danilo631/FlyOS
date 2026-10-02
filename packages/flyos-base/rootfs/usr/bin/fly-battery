@@ -1,0 +1,52 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+from __future__ import annotations
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+NAMES = ("charge_control_end_threshold", "charge_stop_threshold", "charge_control_end_threshold")
+
+def nodes() -> list[Path]:
+    out=[]
+    for bat in Path('/sys/class/power_supply').glob('BAT*'):
+        for name in NAMES:
+            p=bat/name
+            if p.exists() and p not in out: out.append(p)
+    return out
+
+def status() -> int:
+    found=nodes()
+    if not found:
+        print("Battery Care: hardware/driver não expõe limite de carga configurável.")
+        return 3
+    for p in found:
+        try: value=p.read_text().strip()
+        except OSError: value='?'
+        print(f"{p}: {value}%")
+    return 0
+
+def main() -> int:
+    if len(sys.argv) < 2 or sys.argv[1] == 'status': return status()
+    if sys.argv[1] != 'set' or len(sys.argv) != 3:
+        print('uso: fly-battery status | fly-battery set <50-100>', file=sys.stderr); return 2
+    try: value=int(sys.argv[2])
+    except ValueError: return 2
+    if not 50 <= value <= 100:
+        print('o limite deve ficar entre 50 e 100', file=sys.stderr); return 2
+    found=nodes()
+    if not found: return status()
+    helper='/usr/lib/flyos/fly-battery-helper'
+    argv=[helper, str(value)]
+    if os.geteuid() != 0:
+        if not shutil_which('pkexec'):
+            print('pkexec não está disponível', file=sys.stderr); return 127
+        argv=['pkexec', helper, str(value)]
+    return subprocess.call(argv)
+
+def shutil_which(name: str):
+    from shutil import which
+    return which(name)
+
+if __name__ == '__main__': raise SystemExit(main())

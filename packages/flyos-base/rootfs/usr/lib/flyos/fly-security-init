@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+STATE=/var/lib/flyos/security-initialized-v1
+mkdir -p /var/lib/flyos
+[[ -e "$STATE" ]] && exit 0
+
+# Conservative desktop firewall: block unsolicited inbound connections,
+# keep outbound traffic working, and preserve KDE Connect on the LAN.
+if command -v ufw >/dev/null 2>&1; then
+  ufw default deny incoming >/dev/null 2>&1 || true
+  ufw default allow outgoing >/dev/null 2>&1 || true
+  ufw allow 1714:1764/tcp comment 'KDE Connect' >/dev/null 2>&1 || true
+  ufw allow 1714:1764/udp comment 'KDE Connect' >/dev/null 2>&1 || true
+  ufw --force enable >/dev/null 2>&1 || true
+fi
+
+# SSD maintenance is safe and supported by systemd on Ubuntu.
+systemctl enable --now fstrim.timer >/dev/null 2>&1 || true
+systemctl enable apparmor.service >/dev/null 2>&1 || true
+systemctl enable unattended-upgrades.service >/dev/null 2>&1 || true
+
+touch "$STATE"

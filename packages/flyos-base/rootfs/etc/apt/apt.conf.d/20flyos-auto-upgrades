@@ -1,0 +1,5 @@
+// Fly OS keeps security updates available automatically while leaving
+// feature/full-upgrade decisions visible to the user.
+APT::Periodic::Update-Package-Lists "1";
+APT::Periodic::Unattended-Upgrade "1";
+APT::Periodic::AutocleanInterval "7";

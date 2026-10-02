@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+set -euo pipefail
+usage(){ echo "Uso: fly-nightlight status|on|off|toggle|schedule [HH:MM HH:MM TEMPERATURA]"; }
+need(){ command -v "$1" >/dev/null 2>&1 || { echo "$1 não está disponível" >&2; exit 1; }; }
+reconfigure(){ fly-platformctl kwin-reconfigure >/dev/null 2>&1 || true; }
+get(){ kreadconfig6 --file kwinrc --group NightColor --key "$1" 2>/dev/null || true; }
+setv(){ kwriteconfig6 --file kwinrc --group NightColor --key "$1" "$2"; }
+need kwriteconfig6
+case "${1:-status}" in
+ status)
+   need kreadconfig6
+   echo "active=$(get Active)"
+   echo "mode=$(get Mode)"
+   echo "night_temperature=$(get NightTemperature)"
+   echo "evening=$(get EveningBeginFixed)"
+   echo "morning=$(get MorningBeginFixed)"
+   ;;
+ on) setv Active true; reconfigure ;;
+ off) setv Active false; reconfigure ;;
+ toggle)
+   need kreadconfig6
+   cur="$(get Active)"; [[ "$cur" == "true" ]] && setv Active false || setv Active true; reconfigure
+   ;;
+ schedule)
+   evening="${2:-20:00}"; morning="${3:-07:00}"; temp="${4:-4000}"
+   [[ "$evening" =~ ^([01][0-9]|2[0-3]):[0-5][0-9]$ ]] || { echo "Horário noturno inválido" >&2; exit 2; }
+   [[ "$morning" =~ ^([01][0-9]|2[0-3]):[0-5][0-9]$ ]] || { echo "Horário matinal inválido" >&2; exit 2; }
+   [[ "$temp" =~ ^[0-9]+$ ]] && (( temp >= 2500 && temp <= 6500 )) || { echo "Temperatura deve ficar entre 2500K e 6500K" >&2; exit 2; }
+   setv Active true; setv Mode Timings; setv EveningBeginFixed "$evening"; setv MorningBeginFixed "$morning"; setv NightTemperature "$temp"; setv TransitionTime 30; reconfigure
+   ;;
+ *) usage; exit 2 ;;
+esac

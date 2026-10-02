@@ -1,0 +1,65 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+from __future__ import annotations
+import os, shutil
+from pathlib import Path
+from PyQt6.QtCore import Qt, QThread, pyqtSignal
+from PyQt6.QtWidgets import QApplication,QCheckBox,QFrame,QHBoxLayout,QLabel,QMainWindow,QMessageBox,QProgressBar,QPushButton,QVBoxLayout,QWidget
+HOME=Path.home()
+TARGETS=[('Lixeira',HOME/'.local/share/Trash/files'),('Miniaturas',HOME/'.cache/thumbnails'),('Cache do Fly OS',HOME/'.cache/flyos')]
+
+def size_path(p:Path)->int:
+    total=0
+    if not p.exists(): return 0
+    try:
+        for root,dirs,files in os.walk(p):
+            for f in files:
+                try: total+=(Path(root)/f).stat().st_size
+                except OSError: pass
+    except OSError: pass
+    return total
+
+def human(n:int)->str:
+    for unit in ('B','KB','MB','GB','TB'):
+        if n<1024 or unit=='TB': return f'{n:.0f} {unit}' if unit in {'B','KB'} else f'{n:.1f} {unit}'
+        n/=1024
+    return '0 B'
+
+class Scan(QThread):
+    done=pyqtSignal(dict)
+    def run(self): self.done.emit({str(p):size_path(p) for _,p in TARGETS})
+class W(QMainWindow):
+    def __init__(self):
+        super().__init__(); self.setWindowTitle('Fly Storage'); self.resize(660,470); root=QWidget(); self.setCentralWidget(root); l=QVBoxLayout(root); l.setContentsMargins(24,24,24,24); l.setSpacing(12)
+        t=QLabel('Armazenamento'); t.setStyleSheet('font-size:28px;font-weight:700'); l.addWidget(t)
+        usage=shutil.disk_usage(HOME); self.disk=QLabel(f'{human(usage.used)} usados de {human(usage.total)} • {human(usage.free)} livres'); l.addWidget(self.disk)
+        self.bar=QProgressBar(); self.bar.setRange(0,100); self.bar.setValue(int(100*usage.used/max(1,usage.total))); l.addWidget(self.bar)
+        note=QLabel('A limpeza abaixo nunca toca em Documentos, Downloads, Imagens ou outros arquivos pessoais.'); note.setWordWrap(True); note.setStyleSheet('color:#aab4c8'); l.addWidget(note)
+        self.boxes=[]
+        for name,p in TARGETS:
+            f=QFrame(); row=QHBoxLayout(f); cb=QCheckBox(name); val=QLabel('calculando…'); val.setAlignment(Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignVCenter); row.addWidget(cb); row.addStretch(1); row.addWidget(val); l.addWidget(f); self.boxes.append((cb,val,p))
+        buttons=QHBoxLayout(); rescan=QPushButton('Recalcular'); rescan.clicked.connect(self.scan); clean=QPushButton('Limpar selecionados'); clean.clicked.connect(self.clean); apt=QPushButton('Limpar cache de pacotes'); apt.clicked.connect(self.apt_clean); buttons.addWidget(rescan); buttons.addStretch(1); buttons.addWidget(apt); buttons.addWidget(clean); l.addLayout(buttons); l.addStretch(1)
+        self.setStyleSheet('QMainWindow,QWidget{background:#111722;color:#f6f8fb} QFrame{background:#1b2330;border-radius:13px} QCheckBox{padding:10px} QProgressBar{height:10px;border:0;background:#293345;border-radius:5px} QProgressBar::chunk{background:#78aef8;border-radius:5px} QPushButton{background:#27364a;border:1px solid #3b4b62;border-radius:9px;padding:8px 13px} QPushButton:hover{background:#32445d}')
+        self.scan()
+    def scan(self):
+        self.worker=Scan(); self.worker.done.connect(self.scanned); self.worker.start()
+    def scanned(self,d):
+        for cb,label,p in self.boxes: label.setText(human(int(d.get(str(p),0))))
+    def clean(self):
+        chosen=[(cb,p) for cb,_,p in self.boxes if cb.isChecked()]
+        if not chosen: return
+        if QMessageBox.question(self,'Confirmar limpeza','Remover permanentemente os itens selecionados?') != QMessageBox.StandardButton.Yes: return
+        for _,p in chosen:
+            targets=[p]
+            if p == HOME/'.local/share/Trash/files':
+                targets.append(HOME/'.local/share/Trash/info')
+            for target in targets:
+                if not target.exists(): continue
+                try:
+                    for child in target.iterdir():
+                        shutil.rmtree(child,ignore_errors=True) if child.is_dir() and not child.is_symlink() else child.unlink(missing_ok=True)
+                except OSError: pass
+        self.scan()
+    def apt_clean(self):
+        if shutil.which('pkexec'): os.spawnlp(os.P_NOWAIT,'pkexec','pkexec','apt-get','clean')
+app=QApplication([]); app.setApplicationName('Fly Storage'); w=W(); w.show(); raise SystemExit(app.exec())

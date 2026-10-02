@@ -1,0 +1,13 @@
+/.build/
+/.cache/
+/.packages/
+/dist/*.iso
+/dist/*.qcow2
+__pycache__/
+*.pyc
+
+/dist/apt-repo/
+/dist/release-*/
+
+/dist/*.spdx.json
+/dist/*-SHA256SUMS.txt

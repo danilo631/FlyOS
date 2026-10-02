@@ -1,0 +1,14 @@
+[Unit]
+Description=Fly OS idle lock manager
+ConditionFileIsExecutable=/usr/bin/swayidle
+PartOf=flyos-session.target
+After=fly-shell.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/swayidle -w timeout 600 /usr/bin/fly-lock before-sleep /usr/bin/fly-lock
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=flyos-session.target

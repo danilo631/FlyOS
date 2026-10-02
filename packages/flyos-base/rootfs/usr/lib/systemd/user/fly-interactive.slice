@@ -1,0 +1,6 @@
+[Unit]
+Description=Fly OS interactive desktop workload slice
+
+[Slice]
+CPUWeight=200
+IOWeight=200

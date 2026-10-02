@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Fly Bluetooth
+Comment=Pair and manage Bluetooth devices
+Exec=fly-bluetooth
+Icon=bluetooth
+Categories=Settings;HardwareSettings;
+Keywords=bluetooth;headset;mouse;keyboard;device;pair;

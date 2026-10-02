@@ -1,0 +1,235 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+set -euo pipefail
+[[ "$(id -u)" == 0 ]] || { echo 'This helper must run as root.' >&2; exit 77; }
+
+STATE_DIR=/var/lib/flyos/offline-update
+STATE="$STATE_DIR/state"
+LOG="$STATE_DIR/offline-update.log"
+PLAN="$STATE_DIR/apt-plan.txt"
+HASHES="$STATE_DIR/archive.sha256"
+TRANSACTION="$STATE_DIR/apt-transaction.txt"
+SNAPSHOT="$STATE_DIR/snapshot-id"
+MARKER=/system-update
+LOCK=/run/lock/flyos-offline-update.lock
+ARCHIVES=/var/cache/apt/archives
+mkdir -p "$STATE_DIR" /run/lock
+chmod 0755 "$STATE_DIR"
+exec 9>"$LOCK"
+flock -n 9 || { echo 'Another Fly Update transaction is already running.' >&2; exit 73; }
+
+write_state() {
+  local state="$1" detail="${2:-}"
+  printf 'state=%s\nupdated=%s\ndetail=%s\n' "$state" "$(date -Is)" "$detail" > "$STATE.tmp"
+  chmod 0644 "$STATE.tmp"
+  mv -f "$STATE.tmp" "$STATE"
+}
+
+remove_marker() {
+  if [[ -L "$MARKER" ]]; then
+    local target
+    target="$(readlink -f "$MARKER" 2>/dev/null || true)"
+    [[ "$target" == "$STATE_DIR" ]] && rm -f "$MARKER"
+  fi
+}
+
+snapshot_if_possible() {
+  rm -f "$SNAPSHOT"
+  if [[ "$(findmnt -n -o FSTYPE / 2>/dev/null || true)" == btrfs ]] \
+     && command -v snapper >/dev/null 2>&1 \
+     && snapper -c root get-config >/dev/null 2>&1; then
+    local number
+    number="$(snapper -c root create --print-number --description "Before Fly OS offline update $(date +%F-%H%M)" --cleanup-algorithm number 2>/dev/null || true)"
+    [[ "$number" =~ ^[0-9]+$ ]] && printf '%s\n' "$number" > "$SNAPSHOT"
+  fi
+}
+
+prepare() {
+  local free_kb
+  free_kb="$(df -Pk / | awk 'NR==2{print $4}')"
+  if [[ "$free_kb" =~ ^[0-9]+$ ]] && (( free_kb < 5*1024*1024 )); then
+    echo 'Fly Update requires at least 5 GiB free on the root filesystem.' >&2
+    exit 75
+  fi
+
+  remove_marker
+  rm -f "$PLAN" "$HASHES" "$TRANSACTION" "$SNAPSHOT"
+  : > "$LOG"
+  write_state preparing 'Refreshing repositories'
+  export DEBIAN_FRONTEND=noninteractive
+  export LC_ALL=C
+
+  # Never stage over an already-broken package database. Offline mode is a
+  # safer time to *apply* a valid transaction, not a repair mechanism for an
+  # unresolved dpkg/apt state. Fly Recovery handles those cases explicitly.
+  local dpkg_audit
+  dpkg_audit="$(dpkg --audit 2>&1 || true)"
+  if [[ -n "$dpkg_audit" ]]; then
+    write_state failed 'dpkg audit reports an incomplete package state; use Fly Recovery first'
+    printf '%s\n' "$dpkg_audit" >&2
+    echo 'dpkg reports incomplete package configuration. Repair it before staging updates.' >&2
+    exit 79
+  fi
+  if ! apt-get check >/dev/null; then
+    write_state failed 'APT dependency check failed; use Fly Recovery first'
+    echo 'APT dependency check failed. Repair dependencies before staging updates.' >&2
+    exit 79
+  fi
+
+  apt-get update
+  write_state planning 'Resolving the offline transaction'
+  apt-get -s full-upgrade > "$PLAN.tmp"
+  # Keep an auditable plan even when there are zero upgrades.
+  { date -Is; cat "$PLAN.tmp"; } > "$PLAN"
+  grep -E '^(Inst|Remv) ' "$PLAN.tmp" > "$TRANSACTION.tmp" || true
+
+  # Protect the Fly desktop's boot/session substrate from accidental resolver
+  # removals. Old kernels and ordinary superseded libraries can still be
+  # removed normally; only packages whose removal would strand the user are
+  # blocked at the staging boundary.
+  local pkg protected=0
+  while read -r pkg; do
+    case "$pkg" in
+      flyos-*|apt|dpkg|systemd|systemd-sysv|network-manager|kwin-wayland|sddm) protected=1 ;;
+    esac
+  done < <(awk '$1 == "Remv" { print $2 }' "$TRANSACTION.tmp")
+  if (( protected )); then
+    echo 'The resolved update would remove a protected Fly OS/system package. Staging was refused.' >&2
+    cat "$TRANSACTION.tmp" >&2
+    rm -f "$PLAN.tmp" "$TRANSACTION.tmp"
+    write_state failed 'APT resolver requested removal of a protected system package'
+    exit 76
+  fi
+
+  mv -f "$TRANSACTION.tmp" "$TRANSACTION"
+  rm -f "$PLAN.tmp"
+  chmod 0644 "$PLAN" "$TRANSACTION"
+
+  write_state downloading 'Downloading the complete transaction'
+  # The archive directory must describe this transaction only. APT can safely
+  # re-download packages later if the user cancels the prepared update.
+  apt-get clean
+  apt-get -y --download-only full-upgrade
+
+  # Re-solve without network access. If repository metadata changed underneath
+  # us or a required package is missing, do not schedule a reboot. The exact
+  # Inst/Remv transaction must still match what was shown at staging time.
+  apt-get -s --no-download full-upgrade > "$STATE_DIR/verify-plan.tmp"
+  grep -E '^(Inst|Remv) ' "$STATE_DIR/verify-plan.tmp" > "$STATE_DIR/verify-transaction.tmp" || true
+  rm -f "$STATE_DIR/verify-plan.tmp"
+  if ! cmp -s "$TRANSACTION" "$STATE_DIR/verify-transaction.tmp"; then
+    rm -f "$STATE_DIR/verify-transaction.tmp"
+    write_state failed 'APT transaction changed while staging; prepare the update again'
+    echo 'APT transaction changed while staging; refusing to schedule the update.' >&2
+    exit 78
+  fi
+  rm -f "$STATE_DIR/verify-transaction.tmp"
+
+  shopt -s nullglob
+  local debs=("$ARCHIVES"/*.deb)
+  if ((${#debs[@]})); then
+    sha256sum "${debs[@]}" > "$HASHES.tmp"
+    mv -f "$HASHES.tmp" "$HASHES"
+    chmod 0644 "$HASHES"
+  else
+    : > "$HASHES"
+  fi
+  shopt -u nullglob
+
+  snapshot_if_possible
+  write_state ready 'Packages staged, hashed and ready for offline apply'
+  ln -sfn "$STATE_DIR" "$MARKER"
+  sync
+  echo 'Fly OS offline update is ready. Reboot to apply it.'
+}
+
+verify_payload() {
+  [[ -f "$PLAN" && -f "$HASHES" && -f "$TRANSACTION" ]] || {
+    echo 'Offline update metadata is missing.' >&2
+    return 1
+  }
+  if [[ -s "$HASHES" ]]; then
+    sha256sum -c "$HASHES"
+  fi
+}
+
+apply() {
+  # Remove the marker before touching packages so a failure cannot boot-loop.
+  remove_marker
+  write_state verifying 'Validating staged packages'
+  exec > >(tee -a "$LOG") 2>&1
+  echo "=== Fly OS offline update $(date -Is) ==="
+  echo "Plan: $PLAN"
+  if ! verify_payload; then
+    write_state failed 'Staged package verification failed before dpkg was changed'
+    sync
+    systemctl --no-block reboot || true
+    exit 1
+  fi
+
+  # Verify the resolver output again at maintenance boot. If the user changed
+  # package state after staging, the prepared transaction is stale and must not
+  # silently morph into a different full-upgrade.
+  export DEBIAN_FRONTEND=noninteractive
+  export LC_ALL=C
+  apt-get -s --no-download full-upgrade > "$STATE_DIR/apply-plan.tmp" || {
+    rm -f "$STATE_DIR/apply-plan.tmp"
+    write_state failed 'APT could not resolve the staged transaction offline'
+    systemctl --no-block reboot || true
+    exit 1
+  }
+  grep -E '^(Inst|Remv) ' "$STATE_DIR/apply-plan.tmp" > "$STATE_DIR/apply-transaction.tmp" || true
+  rm -f "$STATE_DIR/apply-plan.tmp"
+  if ! cmp -s "$TRANSACTION" "$STATE_DIR/apply-transaction.tmp"; then
+    rm -f "$STATE_DIR/apply-transaction.tmp"
+    write_state failed 'Prepared APT transaction no longer matches system state'
+    echo 'Prepared transaction changed since staging; no packages were modified.' >&2
+    sync
+    systemctl --no-block reboot || true
+    exit 1
+  fi
+  rm -f "$STATE_DIR/apply-transaction.tmp"
+
+  write_state applying 'Installing verified cached packages'
+  set +e
+  dpkg --configure -a
+  rc1=$?
+  apt-get \
+    -o Acquire::Retries=0 \
+    -o Dpkg::Options::=--force-confold \
+    -y --no-download full-upgrade
+  rc2=$?
+  dpkg --audit
+  rc3=$?
+  set -e
+
+  if (( rc1 != 0 || rc2 != 0 || rc3 != 0 )); then
+    local snap='none'
+    [[ -s "$SNAPSHOT" ]] && snap="$(cat "$SNAPSHOT")"
+    write_state failed "dpkg=$rc1 apt=$rc2 audit=$rc3 snapshot=$snap; use Fly Recovery"
+    echo 'Offline update failed. Normal boot will resume; Fly Recovery can inspect the log/snapshot.' >&2
+    sync
+    systemctl --no-block reboot || true
+    exit 1
+  fi
+
+  apt-get clean || true
+  rm -f "$HASHES"
+  write_state complete 'System packages updated successfully'
+  sync
+  systemctl --no-block reboot || true
+}
+
+cancel() {
+  remove_marker
+  rm -f "$PLAN" "$HASHES" "$TRANSACTION"
+  write_state cancelled 'Scheduled offline update cancelled'
+  echo 'Fly OS offline update cancelled.'
+}
+
+case "${1:-}" in
+  prepare) prepare ;;
+  apply) apply ;;
+  cancel) cancel ;;
+  *) echo 'Usage: fly-offline-update-helper {prepare|apply|cancel}' >&2; exit 2 ;;
+esac

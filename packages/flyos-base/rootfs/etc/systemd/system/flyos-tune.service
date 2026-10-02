@@ -1,0 +1,12 @@
+[Unit]
+Description=Fly OS conservative desktop tuning
+After=multi-user.target
+ConditionVirtualization=!container
+
+[Service]
+Type=oneshot
+ExecStart=/usr/lib/flyos/fly-system-tune
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

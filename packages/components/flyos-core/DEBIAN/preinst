@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -e
+case "${1:-}" in
+  install|upgrade)
+    if dpkg-divert --list 2>/dev/null | grep -q '/usr/lib/os-release'; then
+      rm -f /usr/lib/os-release
+      dpkg-divert --package flyos-base --remove --rename --divert /usr/lib/os-release.ubuntu /usr/lib/os-release >/dev/null 2>&1 || true
+    fi
+    if dpkg-divert --list 2>/dev/null | grep -q '/etc/lsb-release'; then
+      rm -f /etc/lsb-release
+      dpkg-divert --package flyos-base --remove --rename --divert /etc/lsb-release.ubuntu /etc/lsb-release >/dev/null 2>&1 || true
+    fi
+  ;;
+esac
+exit 0

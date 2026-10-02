@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=Fly Media Play/Pause
+Exec=fly-media play-pause
+NoDisplay=true
+X-KDE-Shortcuts=Media Play

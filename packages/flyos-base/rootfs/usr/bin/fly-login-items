@@ -1,0 +1,84 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+from __future__ import annotations
+import configparser, os
+from dataclasses import dataclass
+from pathlib import Path
+from PyQt6.QtWidgets import QApplication,QCheckBox,QFrame,QHBoxLayout,QLabel,QMainWindow,QMessageBox,QPushButton,QScrollArea,QVBoxLayout,QWidget
+
+USER_DIR=Path.home()/'.config/autostart'
+SYSTEM_DIRS=[Path('/etc/xdg/autostart'),Path('/usr/local/etc/xdg/autostart')]
+
+@dataclass
+class Item:
+    key:str; name:str; comment:str; system_path:Path|None; user_path:Path|None; enabled:bool
+
+def parse(path:Path):
+    c=configparser.ConfigParser(interpolation=None,strict=False); c.optionxform=str
+    try: c.read(path,encoding='utf-8'); sec=c['Desktop Entry']
+    except (OSError,KeyError,configparser.Error): return None
+    return sec
+
+def items():
+    keys=set(); system={}; user={}
+    for d in SYSTEM_DIRS:
+        if d.is_dir():
+            for p in d.glob('*.desktop'):
+                keys.add(p.name); system.setdefault(p.name,p)
+    if USER_DIR.is_dir():
+        for p in USER_DIR.glob('*.desktop'): keys.add(p.name); user[p.name]=p
+    out=[]
+    for key in sorted(keys):
+        up=user.get(key); sp=system.get(key); sec=parse(up) if up else parse(sp) if sp else None
+        if sec is None: continue
+        if sec.get('NoDisplay','false').casefold()=='true': continue
+        hidden=sec.get('Hidden','false').casefold()=='true'
+        name=sec.get('Name[pt_BR]') or sec.get('Name') or key.removesuffix('.desktop')
+        comment=sec.get('Comment[pt_BR]') or sec.get('Comment') or ('Item do usuário' if up else 'Item do sistema')
+        out.append(Item(key,name,comment,sp,up,not hidden))
+    return out
+
+def write_override(item:Item, enabled:bool):
+    USER_DIR.mkdir(parents=True,exist_ok=True)
+    path=USER_DIR/item.key
+    # A Fly-created override for a system entry can be removed entirely when
+    # enabling, restoring the packaged autostart file without copying it.
+    if enabled and path.exists():
+        sec=parse(path)
+        if sec is not None and sec.get('X-FlyOS-DisableOverride','false').casefold()=='true':
+            path.unlink(missing_ok=True); return
+    if item.user_path and item.user_path.exists() and not (item.system_path and item.user_path==path and (parse(path) or {}).get('X-FlyOS-DisableOverride','false').casefold()=='true'):
+        c=configparser.ConfigParser(interpolation=None,strict=False); c.optionxform=str; c.read(item.user_path,encoding='utf-8')
+        if 'Desktop Entry' not in c: c['Desktop Entry']={}
+        c['Desktop Entry']['Hidden']='false' if enabled else 'true'
+        with path.open('w',encoding='utf-8') as f: c.write(f,space_around_delimiters=False)
+        path.chmod(0o600); return
+    if enabled:
+        return
+    c=configparser.ConfigParser(interpolation=None); c.optionxform=str
+    c['Desktop Entry']={'Type':'Application','Hidden':'true','X-FlyOS-DisableOverride':'true','Name':item.name}
+    with path.open('w',encoding='utf-8') as f: c.write(f,space_around_delimiters=False)
+    path.chmod(0o600)
+
+class W(QMainWindow):
+    def __init__(self):
+        super().__init__(); self.setWindowTitle('Itens de Inicialização'); self.resize(700,620)
+        root=QWidget(); box=QVBoxLayout(root); box.setContentsMargins(24,24,24,24); box.setSpacing(12)
+        t=QLabel('Itens de Inicialização'); t.setStyleSheet('font-size:28px;font-weight:700'); box.addWidget(t)
+        h=QLabel('Controle o que inicia junto com sua sessão. Entradas do sistema são desativadas por override XDG no seu usuário, sem alterar arquivos de pacotes.'); h.setWordWrap(True); h.setStyleSheet('color:#aab4c8'); box.addWidget(h)
+        self.scroll=QScrollArea(); self.scroll.setWidgetResizable(True); self.scroll.setFrameShape(QFrame.Shape.NoFrame); box.addWidget(self.scroll,1)
+        row=QHBoxLayout(); row.addStretch(1); refresh=QPushButton('Atualizar'); refresh.clicked.connect(self.populate); row.addWidget(refresh); box.addLayout(row)
+        self.setCentralWidget(root); self.setStyleSheet('QMainWindow,QWidget{background:#111722;color:#f6f8fb} QFrame#card{background:#1b2330;border:1px solid #2c394d;border-radius:13px} QPushButton{background:#27364a;border:1px solid #3b4b62;border-radius:9px;padding:8px 13px} QPushButton:hover{background:#32445d}')
+        self.populate()
+    def populate(self):
+        holder=QWidget(); layout=QVBoxLayout(holder); layout.setSpacing(8)
+        for item in items():
+            card=QFrame(); card.setObjectName('card'); row=QHBoxLayout(card); row.setContentsMargins(14,11,14,11)
+            col=QVBoxLayout(); name=QLabel(item.name); name.setStyleSheet('font-weight:650'); desc=QLabel(item.comment); desc.setWordWrap(True); desc.setStyleSheet('color:#9eabc0;font-size:11px'); col.addWidget(name); col.addWidget(desc); row.addLayout(col,1)
+            cb=QCheckBox('Ativo'); cb.setChecked(item.enabled); cb.toggled.connect(lambda v,x=item:self.toggle(x,v)); row.addWidget(cb); layout.addWidget(card)
+        layout.addStretch(1); self.scroll.setWidget(holder)
+    def toggle(self,item,enabled):
+        try: write_override(item,enabled)
+        except OSError as exc:
+            QMessageBox.warning(self,'Itens de Inicialização',str(exc)); self.populate()
+app=QApplication([]); app.setApplicationName('Fly Login Items'); w=W(); w.show(); raise SystemExit(app.exec())

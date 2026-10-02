@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+set -u
+
+ok()   { printf '  [OK]   %s\n' "$*"; }
+warn() { printf '  [WARN] %s\n' "$*"; }
+info() { printf '  [INFO] %s\n' "$*"; }
+
+printf 'Fly OS Doctor\n==============\n'
+if [[ -r /etc/os-release ]]; then
+  # shellcheck disable=SC1091
+  . /etc/os-release
+  info "System: ${PRETTY_NAME:-unknown}"
+fi
+info "Kernel: $(uname -sr)"
+info "Session: ${XDG_SESSION_TYPE:-unknown} / ${XDG_CURRENT_DESKTOP:-unknown}"
+
+if command -v mokutil >/dev/null 2>&1; then
+  if mokutil --sb-state 2>/dev/null | grep -qi enabled; then ok "Secure Boot enabled"; else warn "Secure Boot not enabled or unavailable"; fi
+else warn "mokutil not installed"; fi
+
+if systemctl is-active --quiet apparmor 2>/dev/null; then ok "AppArmor active"; else warn "AppArmor not active"; fi
+if command -v ufw >/dev/null 2>&1 && ufw status 2>/dev/null | grep -q 'Status: active'; then ok "Firewall active"; else warn "Firewall inactive/unavailable"; fi
+if swapon --show=NAME 2>/dev/null | grep -q '/dev/zram'; then ok "zram swap active"; else warn "zram swap not active"; fi
+
+if [[ -e /dev/ntsync ]] || grep -qw ntsync /proc/modules 2>/dev/null; then ok "NTSYNC available for Wine/Proton"; else info "NTSYNC device/module not currently visible"; fi
+
+if command -v powerprofilesctl >/dev/null 2>&1; then info "Power: $(powerprofilesctl get 2>/dev/null || echo unavailable)"; fi
+if command -v fwupdmgr >/dev/null 2>&1; then ok "fwupd installed"; else warn "fwupd not installed"; fi
+if command -v flatpak >/dev/null 2>&1; then ok "Flatpak installed"; else info "Flatpak not installed"; fi
+if command -v wine >/dev/null 2>&1; then info "Wine: $(wine --version 2>/dev/null || echo installed)"; else warn "Wine missing"; fi
+
+rootfs="$(findmnt -n -o FSTYPE / 2>/dev/null || true)"
+info "Root filesystem: ${rootfs:-unknown}"
+if [[ "$rootfs" == "btrfs" ]] && command -v snapper >/dev/null 2>&1; then ok "Btrfs/Snapper recovery available"; else info "Snapshot recovery is limited without Btrfs + Snapper"; fi
+
+if [[ -r /proc/pressure/memory ]]; then
+  pressure="$(head -n1 /proc/pressure/memory 2>/dev/null || true)"
+  info "Memory PSI: ${pressure:-unavailable}"
+fi
+
+if systemctl --user is-active --quiet fly-shell.service 2>/dev/null; then ok "Fly Shell active"; else warn "Fly Shell user service not active (Plasma fallback remains available)"; fi
+if systemctl --user is-active --quiet fly-performance-monitor.service 2>/dev/null; then ok "Fly Performance monitor active"; else info "Fly Performance monitor not active"; fi
+
+if [[ -L /system-update ]]; then
+  info "Offline update: prepared for next boot"
+elif [[ -r /var/lib/flyos/offline-update/state ]]; then
+  state="$(awk -F= '$1=="state"{print $2}' /var/lib/flyos/offline-update/state 2>/dev/null || true)"
+  info "Offline update state: ${state:-unknown}"
+fi
+
+components=(flyos-core flyos-shell flyos-center flyos-search flyos-update flyos-recovery flyos-privacy flyos-performance flyos-wine flyos-branding)
+missing=()
+for pkg in "${components[@]}"; do
+  if ! dpkg-query -W -f='${db:Status-Status}' "$pkg" 2>/dev/null | grep -qx installed; then missing+=("$pkg"); fi
+done
+if (( ${#missing[@]} == 0 )); then ok "All Fly platform components installed"; else warn "Missing components: ${missing[*]}"; fi
+
+failed="$(systemctl --user --failed --no-legend 2>/dev/null | awk '{print $1}' | paste -sd, -)"
+[[ -z "$failed" ]] && ok "No failed user services" || warn "Failed user services: $failed"
+
+free_kb="$(df -Pk / 2>/dev/null | awk 'NR==2{print $4}')"
+if [[ "$free_kb" =~ ^[0-9]+$ ]]; then
+  if (( free_kb < 3*1024*1024 )); then warn "Low root disk space: $((free_kb/1024)) MiB free"; else ok "Root disk space: $((free_kb/1024)) MiB free"; fi
+fi
+
+printf '\nSuggested next checks:\n'
+printf '  fly-health            graphical diagnostics\n'
+printf '  fly-update check      updates\n'
+printf '  fly-snapshot status   recovery capability\n'
+printf '  fly-profile status    adaptive profile\n'
+printf '  fly-activity          CPU/RAM/process monitor\n'

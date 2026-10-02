@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Fly OS intentionally tunes by device type instead of forcing one scheduler
+# or read-ahead value onto NVMe, SSD, HDD and virtual disks alike.
+for dev in /sys/block/*; do
+  [[ -r "$dev/queue/rotational" ]] || continue
+  rotational="$(cat "$dev/queue/rotational")"
+
+  if [[ "$rotational" == "1" ]]; then
+    if [[ -w "$dev/queue/read_ahead_kb" ]]; then
+      echo 1024 > "$dev/queue/read_ahead_kb" || true
+    fi
+    if [[ -r "$dev/queue/scheduler" && -w "$dev/queue/scheduler" ]] && grep -qw bfq "$dev/queue/scheduler"; then
+      echo bfq > "$dev/queue/scheduler" || true
+    fi
+  fi
+done
+
+exit 0

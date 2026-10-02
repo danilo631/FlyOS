@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+MARKER="${XDG_CONFIG_HOME:-$HOME/.config}/flyos/initialized-v6"
+[[ -f "$MARKER" ]] && exit 0
+mkdir -p "$(dirname "$MARKER")"
+
+# KWin/Qt defaults are shared by the native Fly session and the Plasma fallback.
+if command -v fly-glass >/dev/null 2>&1; then
+  if [[ "${FLYOS_SAFE_MODE:-0}" == 1 ]]; then fly-glass performance >/dev/null 2>&1 || true; else fly-glass balanced >/dev/null 2>&1 || true; fi
+fi
+if command -v kwriteconfig6 >/dev/null 2>&1; then
+  kwriteconfig6 --file kdeglobals --group General --key ColorScheme FlyGlass
+  kwriteconfig6 --file kdeglobals --group KDE --key AnimationDurationFactor 0.78
+  kwriteconfig6 --file kwinrc --group Plugins --key blurEnabled true
+fi
+
+# When the user deliberately chooses the Plasma fallback session, keep the Fly
+# global theme available but do not force the Fly Shell over plasmashell.
+if [[ "${XDG_CURRENT_DESKTOP:-}" == *KDE* && "${XDG_CURRENT_DESKTOP:-}" != FlyOS* ]]; then
+  if command -v plasma-apply-lookandfeel >/dev/null 2>&1; then
+    plasma-apply-lookandfeel -a org.flyos.desktop || true
+  fi
+fi
+
+if command -v wineboot >/dev/null 2>&1; then
+  export WINEPREFIX="$HOME/.local/share/flyos/wine/default"
+  mkdir -p "$WINEPREFIX"
+  wineboot -u >/dev/null 2>&1 || true
+fi
+
+# Build the local filename index at low priority after the first login.
+systemctl --user start fly-indexer.service >/dev/null 2>&1 || true
+fly-theme refresh >/dev/null 2>&1 || true
+
+touch "$MARKER"

@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=Fly OS
+Comment=Fly OS native Wayland desktop
+Exec=/usr/bin/fly-session
+TryExec=/usr/bin/fly-session
+Type=Application
+DesktopNames=FlyOS;KDE
+X-KDE-PluginInfo-Version=0.5

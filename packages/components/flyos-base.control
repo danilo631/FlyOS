@@ -1,0 +1,11 @@
+Package: flyos-base
+Version: @VERSION@
+Section: metapackages
+Priority: optional
+Architecture: all
+Maintainer: Fly OS Project <devnull@example.invalid>
+Depends: flyos-core (= @VERSION@), flyos-shell (= @VERSION@), flyos-center (= @VERSION@), flyos-search (= @VERSION@), flyos-update (= @VERSION@), flyos-recovery (= @VERSION@), flyos-privacy (= @VERSION@), flyos-performance (= @VERSION@), flyos-wine (= @VERSION@), flyos-branding (= @VERSION@), flyos-repo (= @VERSION@)
+Description: Fly OS complete desktop metapackage
+ Installs the complete Fly OS native Wayland desktop stack. The visible desktop,
+ search, settings, update/recovery layer, Windows compatibility and branding are
+ owned by Fly OS while upstream Linux components remain replaceable layers.

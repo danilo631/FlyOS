@@ -1,0 +1,12 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+import os,sys
+from pathlib import Path
+if os.geteuid()!=0: raise SystemExit(77)
+if len(sys.argv)!=2 or sys.argv[1] not in {'dev','beta','stable'}: raise SystemExit(64)
+p=Path('/etc/apt/sources.list.d/flyos.sources')
+text=p.read_text(encoding='utf-8')
+lines=[]
+for line in text.splitlines():
+    lines.append('Suites: '+sys.argv[1] if line.startswith('Suites:') else line)
+tmp=p.with_suffix('.tmp'); tmp.write_text('\n'.join(lines)+'\n',encoding='utf-8'); os.chmod(tmp,0o644); os.replace(tmp,p)

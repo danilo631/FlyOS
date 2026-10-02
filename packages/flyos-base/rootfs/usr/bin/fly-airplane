@@ -1,0 +1,32 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+from __future__ import annotations
+import json, os, sys, time
+from pathlib import Path
+sys.path.insert(0, '/usr/lib/flyos')
+from flyplatform import nm_radio, nm_set_radio, bluez_powered, bluez_set_powered
+STATE=Path.home()/'.local/state/flyos/airplane.json'
+
+def load():
+    try:
+        d=json.loads(STATE.read_text()); return d if isinstance(d,dict) else {}
+    except Exception: return {}
+def save(d):
+    STATE.parent.mkdir(parents=True,exist_ok=True); tmp=STATE.with_suffix('.tmp'); tmp.write_text(json.dumps(d,separators=(',',':'))+'\n'); tmp.chmod(0o600); os.replace(tmp,STATE)
+def on():
+    if not load().get('active'):
+        save({'active':True,'wifi':nm_radio('wifi'),'wwan':nm_radio('wwan'),'bluetooth':bluez_powered(),'changed_at':int(time.time())})
+    nm_set_radio('wifi',False); nm_set_radio('wwan',False); bluez_set_powered(False)
+def off():
+    d=load(); nm_set_radio('wifi',bool(d.get('wifi',True))); nm_set_radio('wwan',bool(d.get('wwan',False))); bluez_set_powered(bool(d.get('bluetooth',True))); save({'active':False,'changed_at':int(time.time())})
+def status():
+    d=load(); print('on' if d.get('active') else 'off')
+def reconcile():
+    if load().get('active'): nm_set_radio('wifi',False); nm_set_radio('wwan',False); bluez_set_powered(False)
+cmd=sys.argv[1] if len(sys.argv)>1 else 'status'
+if cmd=='on': on()
+elif cmd=='off': off()
+elif cmd=='toggle': off() if load().get('active') else on()
+elif cmd=='reconcile': reconcile()
+elif cmd=='status': status()
+else: raise SystemExit(2)

@@ -1,0 +1,7 @@
+[Unit]
+Description=Refresh Fly OS automatic power profile
+PartOf=flyos-session.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/fly-profile refresh

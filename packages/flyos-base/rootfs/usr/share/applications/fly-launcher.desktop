@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Fly Launcher
+Comment=Search apps with Fly Shell
+Icon=flyos
+Exec=fly-shellctl launcher
+Terminal=false
+Categories=System;
+X-KDE-Shortcuts=Meta+Space

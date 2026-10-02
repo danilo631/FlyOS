@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Open with Fly Windows Compatibility
+Name[pt_BR]=Abrir com Compatibilidade Windows do Fly
+Comment=Run Windows applications using the isolated Fly Wine prefix
+Exec=fly-wine-run %f
+Icon=wine
+NoDisplay=true
+Terminal=false
+MimeType=application/x-ms-dos-executable;application/vnd.microsoft.portable-executable;application/x-msi;
+Categories=System;

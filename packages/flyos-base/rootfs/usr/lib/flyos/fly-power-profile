@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+profile="${1:-balanced}"
+case "$profile" in
+  power-saver|balanced|performance) ;;
+  *) echo "Invalid profile" >&2; exit 2 ;;
+esac
+
+if command -v powerprofilesctl >/dev/null 2>&1; then
+  exec powerprofilesctl set "$profile"
+fi
+
+echo "power-profiles-daemon is not available." >&2
+exit 1

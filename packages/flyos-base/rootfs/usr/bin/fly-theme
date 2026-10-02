@@ -1,0 +1,46 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+from __future__ import annotations
+import json
+import subprocess
+import sys
+from datetime import datetime
+from pathlib import Path
+
+CFG = Path.home() / ".config/flyos/settings.json"
+
+def run(*argv: str) -> None:
+    try: subprocess.run(argv, check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except OSError: pass
+
+def load() -> dict:
+    try: return json.loads(CFG.read_text())
+    except Exception: return {}
+
+def save(d: dict) -> None:
+    CFG.parent.mkdir(parents=True, exist_ok=True)
+    CFG.write_text(json.dumps(d, indent=2, ensure_ascii=False) + "\n")
+
+def apply(mode: str) -> None:
+    dark = mode == "dark"
+    # Keep Fly Shell and Qt/KDE applications in sync. Missing tools are harmless
+    # in recovery/minimal environments.
+    scheme = "FlyGlass" if dark else "BreezeLight"
+    run("kwriteconfig6", "--file", "kdeglobals", "--group", "General", "--key", "ColorScheme", scheme)
+    run("fly-platformctl", "kwin-reconfigure")
+
+def main() -> int:
+    requested = sys.argv[1] if len(sys.argv) > 1 else "auto"
+    if requested not in {"dark", "light", "auto", "refresh"}:
+        print("uso: fly-theme [dark|light|auto|refresh]", file=sys.stderr); return 2
+    cfg = load()
+    if requested != "refresh":
+        cfg["theme"] = requested; save(cfg)
+    mode = cfg.get("theme", "auto") if requested == "refresh" else requested
+    if mode == "auto":
+        hour = datetime.now().hour
+        mode = "dark" if hour >= 19 or hour < 7 else "light"
+    apply(mode)
+    return 0
+
+if __name__ == "__main__": raise SystemExit(main())

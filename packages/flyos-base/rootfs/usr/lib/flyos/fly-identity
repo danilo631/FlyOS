@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+install_identity() {
+  local src="$1" dst="$2"
+  [[ -f "$src" ]] || return 0
+  if [[ -L "$dst" ]]; then
+    rm -f "$dst"
+  fi
+  install -m 0644 "$src" "$dst"
+}
+
+# /etc/os-release takes precedence over /usr/lib/os-release. Keeping the
+# upstream file untouched avoids fighting Ubuntu's base-files package while
+# still presenting Fly OS as the user-facing distribution identity.
+install_identity /usr/lib/flyos/os-release /etc/os-release
+install_identity /usr/lib/flyos/lsb-release /etc/lsb-release
+install_identity /usr/lib/flyos/issue /etc/issue
+install_identity /usr/lib/flyos/issue.net /etc/issue.net

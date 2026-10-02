@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ "${1:-}" == "--safe" ]]; then
+  export FLYOS_SAFE_MODE=1
+  shift
+fi
+
+export XDG_SESSION_TYPE=wayland
+export XDG_CURRENT_DESKTOP=FlyOS
+export XDG_SESSION_DESKTOP=FlyOS
+export KDE_FULL_SESSION=false
+export QT_QPA_PLATFORM=wayland
+export QT_AUTO_SCREEN_SCALE_FACTOR=1
+
+INNER=/usr/lib/flyos/fly-session-inner
+if [[ -z "${DBUS_SESSION_BUS_ADDRESS:-}" ]] && command -v dbus-run-session >/dev/null 2>&1; then
+  exec dbus-run-session -- kwin_wayland --xwayland --exit-with-session "$INNER"
+fi
+exec kwin_wayland --xwayland --exit-with-session "$INNER"

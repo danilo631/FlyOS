@@ -1,0 +1,36 @@
+name: Fly OS CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install package tools
+        run: sudo apt-get update && sudo apt-get install -y dpkg-dev shellcheck
+      - name: Repository hygiene
+        run: |
+          test -s LICENSE
+          test -s README.md
+          test -s PRIVACY.md
+          test -s SECURITY.md
+          test -s CHANGELOG.md
+          ! find . -type f \( -name '*.pyc' -o -path '*/__pycache__/*' \) -print -quit | grep -q .
+      - name: ShellCheck core scripts
+        run: |
+          mapfile -t shell_files < <(grep -rlE '^#!(/usr/bin/env bash|/bin/bash)' build kernel scripts packages/flyos-base tests)
+          shellcheck -S error "${shell_files[@]}"
+      - name: Smoke test
+        run: ./tests/smoke.sh
+      - name: Upload Fly OS packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: flyos-packages-${{ github.sha }}
+          path: .packages/*.deb
+          if-no-files-found: error

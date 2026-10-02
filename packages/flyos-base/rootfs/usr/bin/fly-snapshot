@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cmd="${1:-status}"
+shift || true
+
+rootfs="$(findmnt -n -o FSTYPE / 2>/dev/null || true)"
+if [[ "$rootfs" != "btrfs" ]]; then
+  echo "Fly Recovery: snapshots automáticos requerem raiz Btrfs (detectado: ${rootfs:-unknown})."
+  echo "Em ext4, use backup normal; o Fly OS não força conversões arriscadas."
+  [[ "$cmd" == status ]] && exit 0
+  exit 3
+fi
+
+if ! command -v snapper >/dev/null 2>&1; then
+  echo "snapper is not installed" >&2
+  exit 4
+fi
+
+have_config() { snapper -c root get-config >/dev/null 2>&1; }
+
+case "$cmd" in
+  setup)
+    if have_config; then echo "Snapper root configuration already exists."; exit 0; fi
+    echo "Creating Snapper root configuration..."
+    sudo snapper -c root create-config /
+    ;;
+  create)
+    desc="${*:-Fly OS manual snapshot}"
+    if ! have_config; then
+      echo "No root Snapper config. Run: fly-snapshot setup" >&2
+      exit 5
+    fi
+    sudo snapper -c root create --description "$desc" --cleanup-algorithm number
+    ;;
+  list)
+    snapper -c root list
+    ;;
+  status)
+    echo "Filesystem: $rootfs"
+    if have_config; then echo "Snapper: configured"; snapper -c root list | tail -n 8 || true; else echo "Snapper: not configured"; fi
+    ;;
+  *)
+    echo "Usage: fly-snapshot [status|setup|create DESCRIPTION|list]" >&2
+    exit 2
+    ;;
+esac

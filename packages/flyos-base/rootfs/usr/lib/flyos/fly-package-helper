@@ -1,0 +1,22 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+"""Narrow privileged APT helper used by Fly Apps.
+
+Accepted input is deliberately tiny: install/remove + one canonical Debian
+package name. It is not a generic root command runner.
+"""
+from __future__ import annotations
+import os,re,subprocess,sys
+PKG=re.compile(r'^[a-z0-9][a-z0-9+.-]{0,127}$')
+if os.geteuid()!=0: print('root required',file=sys.stderr); raise SystemExit(77)
+if len(sys.argv)!=3 or sys.argv[1] not in {'install','remove'} or not PKG.fullmatch(sys.argv[2]): raise SystemExit(64)
+action,pkg=sys.argv[1:]
+if action=='install':
+    probe=subprocess.run(['apt-cache','show',pkg],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+    if probe.returncode!=0:
+        print('package not found',file=sys.stderr)
+        raise SystemExit(65)
+    cmd=['apt-get','install','-y','--no-install-recommends','--',pkg]
+else:
+    cmd=['apt-get','remove','-y','--',pkg]
+raise SystemExit(subprocess.run(cmd).returncode)

@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Fly Privacy
+Comment=Veja uso local de câmera e microfone
+Exec=fly-privacy
+Icon=security-high
+Categories=Settings;Security;
+Terminal=false
