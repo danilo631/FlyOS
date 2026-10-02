@@ -1,0 +1,226 @@
+Package: flyos-base
+Version: 0.11.0-dev
+Architecture: all
+Maintainer: Fly OS Project <devnull@example.invalid>
+Depends: flyos-core (= 0.11.0-dev), flyos-shell (= 0.11.0-dev), flyos-center (= 0.11.0-dev), flyos-search (= 0.11.0-dev), flyos-update (= 0.11.0-dev), flyos-recovery (= 0.11.0-dev), flyos-privacy (= 0.11.0-dev), flyos-performance (= 0.11.0-dev), flyos-wine (= 0.11.0-dev), flyos-branding (= 0.11.0-dev), flyos-repo (= 0.11.0-dev)
+Filename: pool/main/f/flyos/flyos-base_0.11.0-dev_all.deb
+Size: 940
+MD5sum: 941faca6b10b45360323da0796ebbfad
+SHA1: bfe54636bbc4451ece4a7f6b2002d65fafc4ad7a
+SHA256: 137f5de27352c99604300a77a7167b7e74e6d5c19ae8be6698edbfef1a5c634b
+Section: metapackages
+Priority: optional
+Description: Fly OS complete desktop metapackage
+ Installs the complete Fly OS native Wayland desktop stack. The visible desktop,
+ search, settings, update/recovery layer, Windows compatibility and branding are
+ owned by Fly OS while upstream Linux components remain replaceable layers.
+
+Package: flyos-branding
+Version: 0.11.0-dev
+Architecture: all
+Maintainer: Fly OS Project <devnull@example.invalid>
+Depends: flyos-core (= 0.11.0-dev), sddm, plymouth
+Recommends: kwin-addons
+Breaks: flyos-base (<< 0.6.0~)
+Replaces: flyos-base (<< 0.6.0~)
+Filename: pool/main/f/flyos/flyos-branding_0.11.0-dev_all.deb
+Size: 7000
+MD5sum: a5cf7d0411a0583cbe054a3349d598aa
+SHA1: 2c1dd2b49d35ccd3e8dd7a864e6c5acdaeae792f
+SHA256: c863e763220b150377bbbaf7abb4f8e534508c180df70238069ee704f07a0fae
+Section: x11
+Priority: optional
+Description: Fly OS visual identity and installer branding
+ Provides wallpapers, icons, SDDM/Plymouth themes, color schemes, fallback Plasma
+ theme and Calamares branding for the Fly OS installation media.
+
+Package: flyos-center
+Version: 0.11.0-dev
+Architecture: all
+Maintainer: Fly OS Project <devnull@example.invalid>
+Depends: flyos-core (= 0.11.0-dev), python3-pyqt6, network-manager, xdg-utils, pkexec
+Recommends: flyos-shell (= 0.11.0-dev), flyos-performance (= 0.11.0-dev), flatpak, kdeconnect, bluez, upower, switcheroo-control, pciutils, kup-backup, plasma-vault, gocryptfs
+Suggests: orca, blueman, plasma-discover, plasma-discover-backend-flatpak, plasma-discover-backend-fwupd
+Breaks: flyos-base (<< 0.6.0~)
+Replaces: flyos-base (<< 0.6.0~)
+Filename: pool/main/f/flyos/flyos-center_0.11.0-dev_all.deb
+Size: 25776
+MD5sum: 342b8d10be74b86fd568465ed9a7f5f8
+SHA1: 1ae849bdc87387fdd6439ca7eea61f66132baa57
+SHA256: f6158f39af8c45296477b72c0d56ccfd2851b7aafffcd92bf300815f9f9ebc73
+Section: utils
+Priority: optional
+Description: Fly OS integrated control center and onboarding
+ Provides Fly Center, Fly Apps, connectivity, storage/startup tools, first-run experience and unified
+ entry points for desktop settings without requiring Plasma Workspace.
+
+Package: flyos-core
+Version: 0.11.0-dev
+Architecture: all
+Maintainer: Fly OS Project <devnull@example.invalid>
+Depends: bash, coreutils, systemd, dbus-user-session, network-manager, pipewire, wireplumber, python3, python3-dbus, python3-gi, power-profiles-daemon
+Recommends: systemd-zram-generator, systemd-oomd, ufw, apparmor-utils, unattended-upgrades, fwupd, btrfs-progs, snapper, rsync, gamemode, mangohud, gamescope
+Breaks: flyos-base (<< 0.6.0~)
+Replaces: flyos-base (<< 0.6.0~)
+Filename: pool/main/f/flyos/flyos-core_0.11.0-dev_all.deb
+Size: 22124
+MD5sum: 51e3edea5aa6e48049bf44d197307d8f
+SHA1: 129f5a1c5e75e3148fbeb78d2518426e734a9c3b
+SHA256: a46d25445818da9c661c91bfb9f2b29b09184011b11a947dc2734b6b61576889
+Section: admin
+Priority: optional
+Description: Fly OS core services and platform integration
+ Identity, security defaults, system tuning, diagnostics, power profiles and
+ hardware-facing helpers shared by all Fly OS components.
+
+Package: flyos-performance
+Version: 0.11.0-dev
+Architecture: all
+Maintainer: Fly OS Project <devnull@example.invalid>
+Depends: flyos-core (= 0.11.0-dev), python3-pyqt6
+Recommends: pipewire, wireplumber
+Breaks: flyos-base (<< 0.8.0~)
+Replaces: flyos-base (<< 0.8.0~)
+Filename: pool/main/f/flyos/flyos-performance_0.11.0-dev_all.deb
+Size: 5644
+MD5sum: bf964d46b61e423554b456ec5442180c
+SHA1: 74db10b1ebd409f738095f3035e9c79f6e838225
+SHA256: 5bc5b133dc11297f4200bdab7af4010b33467d48fd9f9506096fd1c9c6713728
+Section: utils
+Priority: optional
+Description: Fly OS adaptive performance and activity tools
+ Provides a low-overhead PSI/procfs performance monitor and Fly Activity. It
+ informs shell adaptation without forcing schedulers, governors or process kills.
+
+Package: flyos-privacy
+Version: 0.11.0-dev
+Architecture: all
+Maintainer: Fly OS Project <devnull@example.invalid>
+Depends: flyos-core (= 0.11.0-dev), python3-pyqt6
+Recommends: pipewire, wireplumber
+Breaks: flyos-base (<< 0.7.0~)
+Replaces: flyos-base (<< 0.7.0~)
+Filename: pool/main/f/flyos/flyos-privacy_0.11.0-dev_all.deb
+Size: 4132
+MD5sum: def41aafea89db3f67d188998251c684
+SHA1: eb434b8822d5e85b8d14d75058ae7e87071ab182
+SHA256: f5f614ac2ae641ba5498f17e3a4de7d034f1cdbf05f788cf1b88d4999078409d
+Section: utils
+Priority: optional
+Description: Fly OS local privacy indicators and dashboard
+ Provides session-local camera and microphone usage indicators and a privacy
+ dashboard without uploading or persisting activity history by default.
+
+Package: flyos-recovery
+Version: 0.11.0-dev
+Architecture: all
+Maintainer: Fly OS Project <devnull@example.invalid>
+Depends: flyos-core (= 0.11.0-dev), apt, systemd, pkexec, util-linux
+Recommends: btrfs-progs, snapper, rsync, kup-backup
+Breaks: flyos-base (<< 0.6.0~), flyos-update (<< 0.6.0-alpha2~)
+Replaces: flyos-base (<< 0.6.0~), flyos-update (<< 0.6.0-alpha2~)
+Filename: pool/main/f/flyos/flyos-recovery_0.11.0-dev_all.deb
+Size: 7604
+MD5sum: 4597457d22fe7b83ad54cbc5ecf28840
+SHA1: 684f2b0c2e10da19c0f98d1c50f43017be2788be
+SHA256: 32b23ef11bd1e27489a2d6228571f2f61880f6e9771afa561a73ca9bddb6c024
+Section: admin
+Priority: optional
+Description: Fly OS recovery, snapshot and offline-update engine
+ Provides Btrfs/Snapper integration, repair tools, backup entry points and the
+ systemd offline update transaction used by Fly Update.
+
+Package: flyos-repo
+Version: 0.11.0-dev
+Architecture: all
+Maintainer: Fly OS Project <devnull@example.invalid>
+Depends: apt, ca-certificates
+Breaks: flyos-base (<< 0.11.0~)
+Replaces: flyos-base (<< 0.11.0~)
+Filename: pool/main/f/flyos/flyos-repo_0.11.0-dev_all.deb
+Size: 2056
+MD5sum: 83adbb8cbefa3ddd30ec5a07f471a2c6
+SHA1: 5aec435d2f566801d4deb865b662f7334c15d35a
+SHA256: 24a8ed6f49f33b09975b35a8d31b7983497cdbe19c15757a9c0eda3d13acee66
+Section: admin
+Priority: optional
+Description: Fly OS signed APT repository configuration
+ Installs the Fly OS archive public key, deb822 repository source and channel
+ switcher. The private signing key is never shipped in the operating system.
+
+Package: flyos-search
+Version: 0.11.0-dev
+Architecture: all
+Maintainer: Fly OS Project <devnull@example.invalid>
+Depends: flyos-core (= 0.11.0-dev), python3
+Breaks: flyos-base (<< 0.6.0~)
+Replaces: flyos-base (<< 0.6.0~)
+Filename: pool/main/f/flyos/flyos-search_0.11.0-dev_all.deb
+Size: 3928
+MD5sum: 0ba094aaa2b03dc20167e3b43c5a15e5
+SHA1: 60954cf614b417263fcd9d22d191416a4c244d70
+SHA256: 95dd06b415206fe72e326bd1bf278e9f73233a0349548cee3927fd42a037d071
+Section: utils
+Priority: optional
+Description: Fly OS local-first search and indexing
+ Provides the private per-user filename index and command-line search service used
+ by Fly Shell. File contents are never indexed and no query leaves the computer.
+
+Package: flyos-shell
+Version: 0.11.0-dev
+Architecture: all
+Maintainer: Fly OS Project <devnull@example.invalid>
+Depends: flyos-core (= 0.11.0-dev), flyos-search (= 0.11.0-dev), kwin-wayland, kwin-common, xwayland, kglobalacceld, python3-pyqt6, python3-pyqt6.qtqml, python3-pyqt6.qtquick, python3-dbus, python3-gi, qml6-module-qtquick, qml6-module-qtquick-controls, qml6-module-qtquick-layouts, qml6-module-org-kde-layershell, layer-shell-qt, xdg-desktop-portal, xdg-desktop-portal-kde, xdg-utils
+Recommends: flyos-privacy (= 0.11.0-dev), flyos-performance (= 0.11.0-dev), bluez, swayidle, polkit-kde-agent-1, libkscreenlocker6
+Suggests: plasma-workspace, plasma-session-wayland, konsole
+Breaks: flyos-base (<< 0.6.0~)
+Replaces: flyos-base (<< 0.6.0~)
+Filename: pool/main/f/flyos/flyos-shell_0.11.0-dev_all.deb
+Size: 29884
+MD5sum: 11d2d8e6f5b2374ef6d71fdece10dcb3
+SHA1: ec67d10414470ebb35762ee5b0b189b75acef316
+SHA256: 5d2129b0f7ea82d478f8205a0f5609ccdd7af0f5109a4bcdfdedc091737389f0
+Section: x11
+Priority: optional
+Description: Fly OS native Wayland shell and session
+ Provides the Fly desktop, top bar, dock, universal search, quick settings,
+ session lifecycle and local-first desktop services on KWin/Wayland.
+
+Package: flyos-update
+Version: 0.11.0-dev
+Architecture: all
+Maintainer: Fly OS Project <devnull@example.invalid>
+Depends: flyos-core (= 0.11.0-dev), flyos-recovery (= 0.11.0-dev), python3-pyqt6, apt
+Recommends: flatpak, fwupd
+Breaks: flyos-base (<< 0.6.0~)
+Replaces: flyos-base (<< 0.6.0~)
+Filename: pool/main/f/flyos/flyos-update_0.11.0-dev_all.deb
+Size: 5448
+MD5sum: 53ec2d93969468325454155ea628db2c
+SHA1: 7f76ebcc194c6eca2194662858f5ca33b9c550c5
+SHA256: 6ebaec07e4ea924d346cb386e4f7a1415d85fc3b929fa90ccbb4ffd9e8d9ec4e
+Section: admin
+Priority: optional
+Description: Fly OS integrated update experience
+ Provides update discovery, user-facing status and safe staging of system updates
+ into the Fly OS offline update engine.
+
+Package: flyos-wine
+Version: 0.11.0-dev
+Architecture: all
+Maintainer: Fly OS Project <devnull@example.invalid>
+Depends: flyos-core (= 0.11.0-dev), wine | wine64
+Recommends: wine64, wine-binfmt, winetricks, fonts-wine, gamemode, gamescope, mangohud
+Breaks: flyos-base (<< 0.6.0~)
+Replaces: flyos-base (<< 0.6.0~)
+Filename: pool/main/f/flyos/flyos-wine_0.11.0-dev_all.deb
+Size: 1760
+MD5sum: 290b938eb134521540f921862523895f
+SHA1: 94ce0a2cf6ed9b59f81e4d51a410c7292bda72cc
+SHA256: f43267e72113ebd42824ea530e1b2ae21392f6578c6bade38f6b2a67d7e4c3f3
+Section: otherosfs
+Priority: optional
+Description: Fly OS Windows application compatibility integration
+ Provides isolated Wine prefixes, repair helpers, launch handlers and desktop
+ integration for Windows applications.
+

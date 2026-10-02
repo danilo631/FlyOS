@@ -1,0 +1,14 @@
+Origin: Fly OS
+Label: Fly OS
+Suite: dev
+Codename: dev
+Architectures: amd64 all
+Components: main
+Date: Thu, 01 Oct 2026 17:16:13 GMT
+Valid-Until: Sat, 31 Oct 2026 17:16:14 GMT
+Acquire-By-Hash: yes
+SHA256:
+ 088f2473328294197f82278250c4f2cf21bacac6244a15ba28e4385ba2c4f0fd            10139 main/binary-all/Packages
+ 9ed8e94caa091dc34d4163b7ac95dd6b3565a02e8ba7a1070b21486e933ceec9             3443 main/binary-all/Packages.gz
+ 088f2473328294197f82278250c4f2cf21bacac6244a15ba28e4385ba2c4f0fd            10139 main/binary-amd64/Packages
+ 9ed8e94caa091dc34d4163b7ac95dd6b3565a02e8ba7a1070b21486e933ceec9             3443 main/binary-amd64/Packages.gz
